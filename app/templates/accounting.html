@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}النظام المالي | Almizaj ERP{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 style="font-size:28px;">الدفتر المحاسبي (General Ledger) 💰</h1>
+    
+    <form method="GET" class="card" style="margin:0; padding:10px 15px; display:flex; gap:10px; align-items:center;">
+        <label style="font-size:14px; font-weight:bold; color:#94a3b8;">تقرير شهر:</label>
+        <input type="month" name="month" value="{{ current_month }}" style="margin:0; padding:5px; border-color:#334155; background:#0f172a; color:white;" onchange="this.form.submit()">
+    </form>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-bottom:30px;">
+    <div class="card" style="border-bottom: 4px solid #10b981; text-align:center;">
+        <h3 style="color:gray; font-size:14px;">إجمالي الإيرادات</h3>
+        <h2 style="color:#10b981;">{{ income }} ر.س</h2>
+    </div>
+    <div class="card" style="border-bottom: 4px solid #ef4444; text-align:center;">
+        <h3 style="color:gray; font-size:14px;">المرتجعات والتكاليف (COGS)</h3>
+        <h2 style="color:#ef4444; font-size:20px;">
+            <span title="ملغى / مسترجع"><i class="fas fa-undo"></i> {{ refunds }}</span> | 
+            <span title="تكلفة المنتجات المباعة (COGS)"><i class="fas fa-box"></i> {{ cogs }}</span>
+        </h2>
+    </div>
+    <div class="card" style="border-bottom: 4px solid #3b82f6; text-align:center;">
+        <h3 style="color:gray; font-size:14px;">صافي الأرباح</h3>
+        <h2 style="color:#3b82f6;">{{ net }} ر.س</h2>
+    </div>
+</div>
+
+<div class="card">
+    <h3 style="margin-bottom:15px;">تفاصيل الحركات المالية</h3>
+    <div class="table-container">
+    <table>
+        <tr><th>رقم الحركة</th><th>التاريخ</th><th>نوع الحركة</th><th>الوصف والبيان</th><th>القيمة</th></tr>
+        {% for l in ledgers %}
+        <tr>
+            <td style="font-family:monospace; color:gray; font-size:12px;">TRX-{{ l.id }}</td>
+            <td style="font-size:12px; color:gray;">{{ l.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>
+                {% if l.trans_type == 'income' %} <span class="badge btn-success">إيراد ⬆️</span>
+                {% else %} <span class="badge btn-danger">استرجاع ⬇️</span> {% endif %}
+            </td>
+            <td>{{ l.description }}</td>
+            <td dir="ltr" {% if l.amount > 0 %}style="font-weight:bold; color:#10b981;"{% else %}style="font-weight:bold; color:#ef4444;"{% endif %}>
+                {% if l.amount > 0 %}+{% endif %}{{ l.amount }} ر.س
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}مراقبة السلات | Almizaj ERP{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 style="font-size:28px;">مراقبة السلات النشطة والمهجورة 🛒</h1>
+</div>
+
+<div class="card">
+    <p style="color:gray; margin-bottom:15px;">السلات التي لم يتم تحديثها منذ أكثر من 24 ساعة تعتبر <b style="color:#ef4444;">مهجورة</b>.</p>
+    
+    <div class="table-container">
+    <table>
+        <tr>
+            <th>العميل / المعرف</th>
+            <th>محتويات السلة</th>
+            <th>قيمة السلة</th>
+            <th>آخر نشاط</th>
+            <th>الحالة</th>
+            <th>إجراء</th>
+        </tr>
+        {% for c in carts %}
+        <tr>
+            <td>
+                <b style="color:white; font-size:15px;">{{ c.customer_name }}</b><br>
+                <span style="font-size:12px; color:gray;">{{ c.customer_phone }} | {{ c.uid }}</span>
+            </td>
+            
+            <td style="font-size:12px; color:#cbd5e1; line-height:1.6;">
+                {{ c.items_details|safe }}
+            </td>
+            
+            <td><b style="color:#3b82f6; font-size:16px;">{{ c.total_value }} ر.س</b></td>
+            
+            <td style="font-size:12px; color:gray;">
+                {{ c.last_updated }}<br>
+                <span style="color:#f59e0b;">(منذ {{ c.hours_idle }} ساعة)</span>
+            </td>
+            
+            <td>
+                {% if c.is_abandoned %}
+                    <span class="badge" style="background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid #ef4444;">مهجورة ⚠️</span>
+                {% else %}
+                    <span class="badge" style="background:rgba(16,185,129,0.2); color:#10b981;">نشطة 🟢</span>
+                {% endif %}
+            </td>
+            
+            <td>
+                <div style="display:flex; gap:5px;">
+                    <form method="POST" onsubmit="return confirm('هل أنت متأكد من إرسال تذكير لهذا العميل؟');">
+                        <input type="hidden" name="action" value="send_reminder">
+                        <input type="hidden" name="uid" value="{{ c.uid }}">
+                        <button class="btn btn-warning btn-sm" title="إرسال تذكير بصياغة جذابة" {% if not c.is_abandoned %}disabled style="opacity:0.5;"{% endif %}><i class="fas fa-bell"></i></button>
+                    </form>
+                    <form method="POST" onsubmit="return confirm('هل أنت متأكد من حذف سلة هذا العميل؟');">
+                        <input type="hidden" name="action" value="delete_cart">
+                        <input type="hidden" name="uid" value="{{ c.uid }}">
+                        <button class="btn btn-danger btn-sm" title="إفراغ السلة"><i class="fas fa-trash"></i></button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center; padding:30px; color:gray;">لا توجد سلات نشطة حالياً.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+</div>
+{% endblock %}

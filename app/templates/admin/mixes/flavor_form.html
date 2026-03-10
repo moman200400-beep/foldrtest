@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}{% if action == 'add' %}إضافة نكهة{% else %}تعديل نكهة{% endif %}{% endblock %}
+
+{% block content %}
+<div class="header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
+    <div>
+        <h1 style="color:#f8fafc; font-size:28px; margin-bottom:5px;">{% if action == 'add' %}إضافة نكهة{% else %}تعديل نكهة{% endif %}</h1>
+    </div>
+    <a href="{{ url_for('admin_mixes.list_flavors') }}" class="btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
+        <i class="fas fa-arrow-right"></i> عودة
+    </a>
+</div>
+
+<div class="card" style="max-width: 600px;">
+    <form method="POST">
+        <div class="form-group">
+            <label class="form-label">اسم النكهة</label>
+            <input type="text" name="name" value="{{ flavor.name if flavor else '' }}" required placeholder="مثال: عنب، نعناع...">
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">أيقونة تعبيرية (Emoji)</label>
+            <input type="text" name="icon" value="{{ flavor.icon if flavor else '🔥' }}" required placeholder="مثال: 🍇, 🌿, ❄️">
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">التصنيف</label>
+            <input type="text" name="category" value="{{ flavor.category if flavor else 'عام' }}" required placeholder="مثال: فواكه، حمضيات، بارد...">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">السعر الإضافي (اختياري)</label>
+            <input type="number" step="0.01" name="base_price" value="{{ flavor.base_price if flavor else '0.0' }}" required>
+            <small style="color:#64748b; font-size:12px; display:block; margin-top:5px;">إذا كانت هذه النكهة تزيد من سعر الخلطة، ضع القيمة هنا.</small>
+        </div>
+
+        <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-top: 20px;">
+            <input type="checkbox" name="is_active" id="is_active" {% if not flavor or flavor.is_active %}checked{% endif %} style="width:20px; height:20px;">
+            <label for="is_active" style="color:white; font-size:16px; cursor:pointer;" class="form-label">متاح للاختيار (نشط)</label>
+        </div>
+
+        <div style="margin-top:30px;">
+            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> حفظ النكهة</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

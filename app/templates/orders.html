@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}إدارة الطلبات | Almizaj ERP{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 style="font-size:28px;">إدارة الطلبات الاحترافية</h1>
+    <a href="?export=csv&search={{ search_query }}&status={{ current_filter }}" class="btn btn-success" style="text-decoration:none;">
+        <i class="fas fa-file-excel"></i> تصدير الطلبات CSV
+    </a>
+</div>
+
+<form method="GET" class="card" style="display:flex; gap:10px; align-items:center; padding:15px;">
+    <input type="text" name="search" placeholder="ابحث برقم الطلب، اسم العميل، أو الجوال..." value="{{ search_query }}" style="margin:0; flex:1;">
+    <select name="status" style="margin:0; width:200px;">
+        <option value="all" {% if current_filter == 'all' %}selected{% endif %}>جميع الحالات</option>
+        <option value="pending" {% if current_filter == 'pending' %}selected{% endif %}>معلق</option>
+        <option value="paid" {% if current_filter == 'paid' %}selected{% endif %}>مدفوع</option>
+        <option value="processing" {% if current_filter == 'processing' %}selected{% endif %}>قيد التحضير</option>
+        <option value="shipping" {% if current_filter == 'shipping' %}selected{% endif %}>في الطريق</option>
+        <option value="completed" {% if current_filter == 'completed' %}selected{% endif %}>مكتمل</option>
+        <option value="refunded" {% if current_filter == 'refunded' %}selected{% endif %}>مسترجع</option>
+        <option value="cancelled" {% if current_filter == 'cancelled' %}selected{% endif %}>ملغي</option>
+    </select>
+    <button type="submit" class="btn"><i class="fas fa-search"></i> بحث</button>
+    <a href="{{ url_for('admin.orders_page') }}" class="btn btn-danger" style="text-decoration:none;">إلغاء</a>
+</form>
+
+<div class="card">
+    <p style="color:gray; margin-bottom:15px;">عدد الطلبات: {{ orders|length }}</p>
+    <div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>رقم الطلب</th>
+                <th>التاريخ</th>
+                <th>العميل</th>
+                <th>العنوان</th>
+                <th>الحي</th>
+                <th>سعر التوصيل</th>
+                <th>خريطة</th>
+                <th>المنتجات</th>
+                <th>المبلغ / الدفع</th>
+                <th>تحديث الحالة</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for o in orders %}
+            <tr>
+                <td style="color:#3b82f6; font-weight:bold;">#{{ o.id }}</td>
+                <td style="font-size:12px; color:gray;">{{ o.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    <b>{{ o.customer_name or 'غير محدد' }}</b><br>
+                    <span style="font-size:12px; color:#10b981;">{{ o.customer_phone or '' }}</span>
+                </td>
+                <td>{{ o.address_details or o.address or '-' }}</td>
+                <td>{{ o.delivery_neighborhood or '-' }}</td>
+                <td>{{ o.delivery_price or 0 }} ر.س</td>
+                <td>
+                    {% if o.location_link %}
+                        <a href="{{ o.location_link }}" target="_blank" class="btn" style="padding:4px 8px;"><i class="fas fa-map-marker-alt"></i></a>
+                    {% else %}-{% endif %}
+                </td>
+                <td style="font-size:12px;">
+                    {% if o.parsed_items %}
+                        {% for item in o.parsed_items %}
+                            - {{ item.name }} (x{{ item.quantity }})<br>
+                        {% endfor %}
+                    {% else %}
+                        <span style="color:gray;">لا توجد منتجات</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <b style="color:#10b981;">{{ o.total_amount }} ر.س</b><br>
+                    {{ o.payment_method }}
+                </td>
+                <td>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <form method="POST" style="margin:0;">
+                            <input type="hidden" name="order_id" value="{{ o.id }}">
+                            <select name="status" onchange="this.form.submit()" style="margin:0; width:150px; font-size:12px;">
+                                <option value="pending" {% if o.status == 'pending' %}selected{% endif %}>معلق</option>
+                                <option value="paid" {% if o.status == 'paid' %}selected{% endif %}>مدفوع</option>
+                                <option value="processing" {% if o.status == 'processing' %}selected{% endif %}>قيد التحضير</option>
+                                <option value="shipping" {% if o.status == 'shipping' %}selected{% endif %}>في الطريق</option>
+                                <option value="completed" {% if o.status == 'completed' %}selected{% endif %}>مكتمل</option>
+                                <option value="refunded" {% if o.status == 'refunded' %}selected{% endif %}>مسترجع</option>
+                                <option value="cancelled" {% if o.status == 'cancelled' %}selected{% endif %}>ملغي</option>
+                            </select>
+                        </form>
+                        <a href="{{ url_for('admin.order_details', order_id=o.id) }}" class="btn" style="background:#3b82f6; padding:8px 12px; text-decoration:none;" title="تفاصيل الطلب">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{{ url_for('admin.order_invoice', order_id=o.id) }}" target="_blank" class="btn" style="background:#8b5cf6; padding:8px 12px; text-decoration:none;" title="طباعة الفاتورة">
+                            <i class="fas fa-print"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align:center; padding:30px; color:gray;">لا توجد طلبات.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>تقرير المندوب: {{ courier.name }}</title>
+    <!-- Use basic styles to ensure compatibility with PDF converters like WeasyPrint/wkhtmltopdf -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
+        
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Tajawal', sans-serif; direction:rtl; }
+        body { background: #fff; color: #000; padding: 20px; font-size: 14px; }
+        
+        /* A4 Print Setup */
+        @page { size: A4; margin: 20mm; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: none; margin: 0; padding: 0; }
+        }
+        
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+        .header h1 { font-size: 24px; font-weight: 900; color: #111; margin-bottom: 5px; }
+        .header h2 { font-size: 20px; color: #3b82f6; margin-bottom: 5px; }
+        .header p { font-size: 14px; color: #555; }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background-color: #f3f4f6; font-weight: bold; color: #333; }
+        
+        .summary-table { width: 50%; margin: 0 auto; margin-top: 30px; border: 2px solid #333; }
+        .summary-table th { background-color: #e5e7eb; }
+        .summary-table td { font-weight: bold; }
+        
+        .footer { margin-top: 50px; display: flex; justify-content: space-between; font-size: 14px; }
+        .signature-box { width: 200px; border-top: 1px solid #000; text-align: center; padding-top: 5px; }
+        
+        /* Interactive Buttons */
+        .controls { text-align: center; margin-bottom: 30px; }
+        .btn { padding: 10px 20px; font-size: 14px; font-weight: bold; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 0 5px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+        .btn-print { background-color: #3b82f6; }
+        .btn-whatsapp { background-color: #10b981; }
+        .btn-back { background-color: #64748b; }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="controls no-print">
+        <a href="{{ url_for('admin.courier_reports') }}" class="btn btn-back"><i class="fas fa-arrow-right"></i> عودة للتقارير</a>
+        <button onclick="window.print()" class="btn btn-print"><i class="fas fa-print"></i> طباعة / حفظ PDF</button>
+        <button onclick="sendWhatsApp()" class="btn btn-whatsapp"><i class="fab fa-whatsapp"></i> مشاركة واتساب</button>
+    </div>
+
+    <!-- Printable Area Starts Here -->
+    <div class="header">
+        <h1>Almizaj ERP</h1>
+        <h2>تقرير طلبات المندوب: {{ courier.name }}</h2>
+        <p>تاريخ ووقت التقرير: {{ print_date.strftime('%Y-%m-%d %I:%M %p') }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>الحي</th>
+                <th>شيشة مباعة (السعر)</th>
+                <th>رأس مباع (السعر)</th>
+                <th>التوصيل</th>
+                <th>كاش</th>
+                <th>شبكة</th>
+                <th>الإجمالي</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for o in orders %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ o.district }}</td>
+                <td>{{ o.shisha_boxes_used }} ({{ "%.2f"|format(o.shisha_price) }})</td>
+                <td>{{ o.head_boxes_used }} ({{ "%.2f"|format(o.head_price) }})</td>
+                <td>{{ "%.2f"|format(o.delivery_fee) }}</td>
+                <td>{{ "%.2f"|format(o.cash_amount) }}</td>
+                <td>{{ "%.2f"|format(o.card_amount) }}</td>
+                <td><strong>{{ "%.2f"|format(o.total) }}</strong></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7">لا توجد طلبات لهذا المندوب في هذه الفترة.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="summary-table">
+        <thead>
+            <tr><th colspan="2">إجماليات المندوب</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>جرد الشيشة</td><td style="color:#3b82f6;">العهدة: {{ summary.shisha_received }} | المباع: {{ summary.total_shisha_used }} | المتبقي: <strong>{{ summary.shisha_remaining }}</strong></td></tr>
+            <tr><td>جرد الرأس</td><td style="color:#3b82f6;">العهدة: {{ summary.head_received }} | المباع: {{ summary.total_head_used }} | المتبقي: <strong>{{ summary.head_remaining }}</strong></td></tr>
+            <tr><td>إجمالي الطلبات</td><td>{{ summary.orders_count }} طلب</td></tr>
+            <tr><td>إجمالي الكاش</td><td>{{ "%.2f"|format(summary.total_cash) }} ر.س</td></tr>
+            <tr><td>إجمالي الشبكة</td><td>{{ "%.2f"|format(summary.total_card) }} ر.س</td></tr>
+            <tr><td>إجمالي التوصيل</td><td>{{ "%.2f"|format(summary.total_delivery) }} ر.س</td></tr>
+            <tr><td style="background-color: #f3f4f6; font-size: 16px;">الإجمالي النهائي</td><td style="font-size: 16px; color:#f59e0b;"><strong>{{ "%.2f"|format(summary.grand_total) }} ر.س</strong></td></tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <div>
+            <p>توقيع المندوب:</p>
+            <div class="signature-box"></div>
+        </div>
+        <div>
+            <p>توقيع المحاسب / المشرف:</p>
+            <div class="signature-box"></div>
+        </div>
+    </div>
+
+    <script>
+        function sendWhatsApp() {
+            let date = "{{ print_date.strftime('%Y-%m-%d') }}";
+            let text = `📊 تقرير طلبات المندوب: {{ courier.name }}\nالتاريخ: ${date}\n\n`;
+            
+            text += `📦 جرد الشيشة: عهدة ({{ summary.shisha_received }}) | مباع ({{ summary.total_shisha_used }}) | متبقي ({{ summary.shisha_remaining }})\n`;
+            text += `📦 جرد الرأس: عهدة ({{ summary.head_received }}) | مباع ({{ summary.total_head_used }}) | متبقي ({{ summary.head_remaining }})\n`;
+            text += `----------------------\n`;
+            text += `📦 طلبات: {{ summary.orders_count }}\n`;
+            text += `💰 كاش: {{ summary.total_cash }} ر.س\n`;
+            text += `💳 شبكة: {{ summary.total_card }} ر.س\n`;
+            text += `🚚 إجمالي التوصيل: {{ summary.total_delivery }} ر.س\n`;
+            
+            text += `=====================\n`;
+            text += `🌟 الإجمالي الكلي: {{ summary.grand_total }} ر.س\n`;
+
+            let url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        }
+    </script>
+</body>
+</html>

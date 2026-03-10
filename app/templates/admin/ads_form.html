@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if action == 'add' %}إضافة إعلان{% else %}تعديل الإعلان{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>
+                {% if action == 'add' %}
+                    إضافة إعلان جديد
+                {% else %}
+                    تعديل الإعلان: {{ ad.title }}
+                {% endif %}
+            </h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('admin_ads.list_ads') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> العودة إلى القائمة
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <form method="POST" enctype="multipart/form-data" class="needs-validation">
+                <div class="card">
+                    <div class="card-body">
+                        <!-- العنوان -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">العنوان <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{{ ad.title if ad else '' }}" required maxlength="150">
+                            <small class="form-text text-muted">عنوان الإعلان الذي سيظهر للمستخدمين</small>
+                        </div>
+
+                        <!-- الوصف -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">وصف الإعلان</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" maxlength="300">{{ ad.description if ad else '' }}</textarea>
+                            <small class="form-text text-muted">وصف تشويقي صغير أسفل الإعلان</small>
+                        </div>
+                        
+                        <!-- لون الخلفية -->
+                        <div class="mb-3">
+                            <label for="bg_color" class="form-label">لون خلفية الإعلان (HEX Code)</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="color" class="form-control form-control-color" id="color_picker" 
+                                       value="{{ ad.bg_color if ad else '#1E293B' }}" title="اختر لون">
+                                <input type="text" class="form-control" id="bg_color" name="bg_color" 
+                                       value="{{ ad.bg_color if ad else '#1E293B' }}" required style="max-width: 150px;" pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$">
+                            </div>
+                            <small class="form-text text-muted">يُستخدم لتلوين بطاقة الإعلان في التطبيق</small>
+                            <script>
+                                document.getElementById('color_picker').addEventListener('input', function() {
+                                    document.getElementById('bg_color').value = this.value;
+                                });
+                                document.getElementById('bg_color').addEventListener('input', function() {
+                                    document.getElementById('color_picker').value = this.value;
+                                });
+                            </script>
+                        </div>
+
+                        <!-- الرابط -->
+                        <div class="mb-3">
+                            <label for="link" class="form-label">رابط الإعلان</label>
+                            <input type="url" class="form-control" id="link" name="link" 
+                                   value="{{ ad.link if ad else '#' }}" maxlength="300">
+                            <small class="form-text text-muted">الرابط الذي سيتم الانتقال إليه عند النقر على الإعلان</small>
+                        </div>
+
+                        <!-- الموضع -->
+                        <div class="mb-3">
+                            <label for="position" class="form-label">ترتيب الظهور</label>
+                            <input type="number" class="form-control" id="position" name="position" 
+                                   value="{{ ad.position if ad else '0' }}" min="0" max="999">
+                            <small class="form-text text-muted">الأرقام الأقل تظهر أولاً (0 = الأول)</small>
+                        </div>
+
+                        <!-- الصورة -->
+                        <div class="mb-3">
+                            <label for="image" class="form-label">
+                                صورة الإعلان
+                                {% if action == 'add' %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            <input type="file" class="form-control" id="image" name="image" 
+                                   accept=".png,.jpg,.jpeg,.gif,.webp" 
+                                   {% if action == 'add' %}required{% endif %}>
+                            <small class="form-text text-muted">
+                                الصيغ المدعومة: PNG, JPG, JPEG, GIF, WebP (الحد الأقصى: عدة ميجابايتات)
+                            </small>
+                        </div>
+
+                        <!-- معاينة الصورة الحالية -->
+                        {% if action == 'edit' and ad.image %}
+                            <div class="mb-3">
+                                <label class="form-label">الصورة الحالية</label>
+                                <div>
+                                    <img src="{{ ad.image }}" alt="{{ ad.title }}" 
+                                         style="max-height: 200px; max-width: 100%; object-fit: cover; border-radius: 4px; border: 1px solid #dee2e6;">
+                                    <small class="d-block text-muted mt-2">أترك حقل الصورة فارغاً للاحتفاظ بالصورة الحالية</small>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- الحالة -->
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active"
+                                       {% if action == 'edit' and ad.is_active %}checked{% elif action == 'add' %}checked{% endif %}>
+                                <label class="form-check-label" for="is_active">
+                                    تفعيل هذا الإعلان (سيكون مرئياً للمستخدمين)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer d-flex justify-content-between">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> 
+                            {% if action == 'add' %}إضافة الإعلان{% else %}حفظ التغييرات{% endif %}
+                        </button>
+                        <a href="{{ url_for('admin_ads.list_ads') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> إلغاء
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- معلومات مساعدة -->
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> معلومات مفيدة</h5>
+                </div>
+                <div class="card-body">
+                    <h6>نصائح لإعلان ناجح:</h6>
+                    <ul class="small mb-3">
+                        <li>استخدم عنواناً واضحاً وجذاباً</li>
+                        <li>اختر صورة عالية الجودة</li>
+                        <li>تأكد من أن الرابط يعمل بشكل صحيح</li>
+                        <li>استخدم الترتيب لتحديد أولويات العروض</li>
+                    </ul>
+
+                    <hr>
+
+                    <h6>المتطلبات التقنية:</h6>
+                    <ul class="small">
+                        <li><strong>الصورة:</strong> PNG, JPG, GIF, WebP (اختيارية إن كان تعديل، وإلا إجبارية)</li>
+                        <li><strong>الوصف:</strong> اختياري للترويج.</li>
+                        <li><strong>اللون:</strong> كود الـ Hex (مثال: #1e293b).</li>
+                        <li><strong>الحد الأقصى للطول:</strong> 150 حرف</li>
+                        <li><strong>الحالة:</strong> مُفعّل/مُعطّل</li>
+                        <li><strong>الترتيب:</strong> 0-999</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .needs-validation {
+        display: block;
+    }
+    
+    .form-control:focus,
+    .form-check-input:focus {
+        border-color: #A855F7;
+        box-shadow: 0 0 0 0.2rem rgba(168, 85, 247, 0.25);
+    }
+    
+    .btn-success {
+        background-color: #EC4899;
+        border-color: #EC4899;
+    }
+    
+    .btn-success:hover {
+        background-color: #A855F7;
+        border-color: #A855F7;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+    }
+</style>
+{% endblock %}

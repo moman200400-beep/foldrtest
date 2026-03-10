@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>تقرير طلبات المندوبين اليومية</title>
+    <!-- Use basic styles to ensure compatibility with PDF converters like WeasyPrint/wkhtmltopdf -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
+        
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Tajawal', sans-serif; direction:rtl; }
+        body { background: #fff; color: #000; padding: 20px; font-size: 14px; }
+        
+        /* A4 Print Setup */
+        @page { size: A4; margin: 20mm; }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: none; margin: 0; padding: 0; }
+        }
+        
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+        .header h1 { font-size: 24px; font-weight: 900; color: #111; margin-bottom: 5px; }
+        .header p { font-size: 14px; color: #555; }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background-color: #f3f4f6; font-weight: bold; color: #333; }
+        
+        .summary-table { width: 50%; margin: 0 auto; margin-top: 30px; border: 2px solid #333; }
+        .summary-table th { background-color: #e5e7eb; }
+        .summary-table td { font-weight: bold; }
+        
+        .footer { margin-top: 50px; display: flex; justify-content: space-between; font-size: 14px; }
+        .signature-box { width: 200px; border-top: 1px solid #000; text-align: center; padding-top: 5px; }
+        
+        /* Interactive Buttons */
+        .controls { text-align: center; margin-bottom: 30px; }
+        .btn { padding: 10px 20px; font-size: 14px; font-weight: bold; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 0 5px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+        .btn-print { background-color: #3b82f6; }
+        .btn-whatsapp { background-color: #10b981; }
+        .btn-back { background-color: #64748b; }
+    </style>
+    <!-- Include FontAwesome for icons on the screen, icons will render if connected to internet -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="controls no-print">
+        <a href="{{ url_for('admin.courier_reports') }}" class="btn btn-back"><i class="fas fa-arrow-right"></i> عودة للتقارير</a>
+        <button onclick="window.print()" class="btn btn-print"><i class="fas fa-print"></i> طباعة / حفظ PDF</button>
+        <button onclick="sendWhatsApp()" class="btn btn-whatsapp"><i class="fab fa-whatsapp"></i> مشاركة واتساب</button>
+    </div>
+
+    <!-- Printable Area Starts Here -->
+    <div class="header">
+        <h1>Almizaj ERP</h1>
+        <h2>تقرير طلبات المندوبين اليومية (الجرد العام)</h2>
+        <p>تاريخ ووقت التقرير: {{ print_date.strftime('%Y-%m-%d %I:%M %p') }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>اسم المندوب</th>
+                <th>عدد الطلبات</th>
+                <th>جرد الشيشة</th>
+                <th>جرد الرأس</th>
+                <th>إجمالي التوصيل</th>
+                <th>كاش</th>
+                <th>شبكة</th>
+                <th>الإجمالي الكلي</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set totals = namespace(orders=0, boxes=0, delivery=0, cash=0, card=0, grand=0) %}
+
+            {% for r in reports %}
+                {% set totals.orders = totals.orders + r.orders_count %}
+                {% set totals.boxes = totals.boxes + r.total_boxes %}
+                {% set totals.delivery = totals.delivery + r.total_delivery %}
+                {% set totals.cash = totals.cash + r.total_cash %}
+                {% set totals.card = totals.card + r.total_card %}
+                {% set totals.grand = totals.grand + r.grand_total %}
+            <tr>
+                <td>{{ r.courier.name }}</td>
+                <td>{{ r.orders_count }}</td>
+                <td style="font-size: 13px;">العهدة: {{ r.shisha_received }}<br>المباع: {{ r.total_shisha_used }}<br>المتبقي: {{ r.shisha_remaining }}</td>
+                <td style="font-size: 13px;">العهدة: {{ r.head_received }}<br>المباع: {{ r.total_head_used }}<br>المتبقي: {{ r.head_remaining }}</td>
+                <td>{{ "%.2f"|format(r.total_delivery) }}</td>
+                <td>{{ "%.2f"|format(r.total_cash) }}</td>
+                <td>{{ "%.2f"|format(r.total_card) }}</td>
+                <td><strong>{{ "%.2f"|format(r.grand_total) }}</strong></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7">لا توجد سجلات لعرضها في هذا التقرير.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="summary-table">
+        <thead>
+            <tr><th colspan="2">الإجمالي العام لجميع المندوبين</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>إجمالي الطلبات</td><td>{{ totals.orders }} طلب</td></tr>
+            <tr><td>إجمالي البوكسات</td><td>{{ totals.boxes }} بوكس</td></tr>
+            <tr><td>إجمالي الكاش</td><td>{{ "%.2f"|format(totals.cash) }} ر.س</td></tr>
+            <tr><td>إجمالي الشبكة</td><td>{{ "%.2f"|format(totals.card) }} ر.س</td></tr>
+            <tr><td>إجمالي التوصيل</td><td>{{ "%.2f"|format(totals.delivery) }} ر.س</td></tr>
+            <tr><td style="background-color: #f3f4f6; font-size: 16px;">الإجمالي النهائي</td><td style="font-size: 16px;"><strong>{{ "%.2f"|format(totals.grand) }} ر.س</strong></td></tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <div>
+            <p>توقيع المسؤول:</p>
+            <div class="signature-box"></div>
+        </div>
+        <div>
+            <p>تم الإصدار بواسطة نظام الإدارة Almizaj</p>
+        </div>
+    </div>
+
+    <script>
+        function sendWhatsApp() {
+            let date = "{{ print_date.strftime('%Y-%m-%d') }}";
+            let text = `📊 تقرير طلبات المندوبين العام\nالتاريخ: ${date}\n\n`;
+            
+            {% for r in reports %}
+            text += `🏍️ إسم المندوب: {{ r.courier.name }}\n`;
+            text += `📦 جرد الشيشة: عهدة ({{ r.shisha_received }}) | مباع ({{ r.total_shisha_used }}) | متبقي ({{ r.shisha_remaining }})\n`;
+            text += `📦 جرد الرأس: عهدة ({{ r.head_received }}) | مباع ({{ r.total_head_used }}) | متبقي ({{ r.head_remaining }})\n`;
+            text += `طلبات: {{ r.orders_count }}\n`;
+            text += `كاش: {{ r.total_cash }} | شبكة: {{ r.total_card }}\n`;
+            text += `التوصيل: {{ r.total_delivery }}\n`;
+            text += `الإجمالي: {{ r.grand_total }}\n\n`;
+            {% endfor %}
+            
+            text += `=====================\n`;
+            text += `🌟 الإجمالي العام\n`;
+            text += `طلبات: {{ totals.orders }} | بوكسات: {{ totals.boxes }}\n`;
+            text += `كاش: {{ totals.cash }} | شبكة: {{ totals.card }}\n`;
+            text += `الإجمالي النهائي: {{ totals.grand }} ر.س\n`;
+
+            let url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        }
+    </script>
+</body>
+</html>

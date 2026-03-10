@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}إدارة المحتوى | Almizaj ERP{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 style="font-size:28px;">إدارة المحتوى والصفحات 📝</h1>
+</div>
+
+<form method="POST" class="card" style="border-top: 4px solid #8b5cf6;">
+    <p style="color:gray; margin-bottom:20px;">النصوص التي تكتبها هنا ستتحدث فوراً في تطبيق العميل (بدون الحاجة لتحديث التطبيق من المتجر).</p>
+    
+    <div style="margin-bottom:20px;">
+        <h3 style="color:#8b5cf6; margin-bottom:10px;"><i class="fas fa-hand-sparkles"></i> الرسالة الترحيبية (في الصفحة الرئيسية)</h3>
+        <input type="text" name="welcome_message" value="{{ content.welcome_message }}" style="width:100%; font-size:16px;" required>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
+        <div>
+            <h3 style="color:#3b82f6; margin-bottom:10px;"><i class="fas fa-file-contract"></i> الشروط والأحكام</h3>
+            <textarea name="terms_conditions" rows="8" style="width:100%; padding:15px; background:#0f172a; border:1px solid #334155; border-radius:12px; color:white; outline:none; resize:none;">{{ content.terms_conditions }}</textarea>
+        </div>
+        
+        <div>
+            <h3 style="color:#10b981; margin-bottom:10px;"><i class="fas fa-user-shield"></i> سياسة الخصوصية</h3>
+            <textarea name="privacy_policy" rows="8" style="width:100%; padding:15px; background:#0f172a; border:1px solid #334155; border-radius:12px; color:white; outline:none; resize:none;">{{ content.privacy_policy }}</textarea>
+        </div>
+    </div>
+
+    <div style="margin-bottom:25px;">
+        <h3 style="color:#f59e0b; margin-bottom:10px;"><i class="fas fa-info-circle"></i> من نحن (About Us)</h3>
+        <textarea name="about_us" rows="4" style="width:100%; padding:15px; background:#0f172a; border:1px solid #334155; border-radius:12px; color:white; outline:none; resize:none;">{{ content.about_us }}</textarea>
+    </div>
+
+    <button type="submit" class="btn" style="width:100%; padding:15px; font-size:18px;"><i class="fas fa-save"></i> حفظ ونشر المحتوى</button>
+</form>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}تفاصيل الطلب #{{ order.id }} | Almizaj ERP{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <div style="display:flex; align-items:center; gap:15px;">
+        <a href="{{ url_for('admin.orders_page') }}" class="btn" style="background:#475569; padding:8px 12px; border-radius:10px; text-decoration:none;"><i class="fas fa-arrow-right"></i> عودة</a>
+        <h1 style="font-size:26px;">
+            تفاصيل الطلب <span style="color:#3b82f6;">#{{ order.id }}</span>
+        </h1>
+    </div>
+    
+    <div style="display:flex; gap:10px; align-items:center;">
+        <span class="badge" style="font-size:14px; padding:8px 12px; background:rgba(255,255,255,0.1);">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        <a href="{{ url_for('admin.order_invoice', order_id=order.id) }}" target="_blank" class="btn btn-warning" style="text-decoration:none;"><i class="fas fa-print"></i> طباعة الفاتورة</a>
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-bottom:30px;">
+    <div class="card" style="border-bottom: 4px solid #3b82f6; padding:20px; margin-bottom:0;">
+        <i class="fas fa-money-bill-wave" style="font-size:22px; color:#3b82f6; margin-bottom:10px;"></i>
+        <h3 style="color:#94a3b8; font-size:13px;">المبلغ الإجمالي</h3>
+        <h2 style="font-size:26px; color:#f8fafc;">{{ order.total_amount }} <small style="font-size:14px; color:#64748b;">ر.س</small></h2>
+    </div>
+    
+    <div class="card" style="border-bottom: 4px solid #10b981; padding:20px; margin-bottom:0;">
+        <i class="fas fa-chart-line" style="font-size:22px; color:#10b981; margin-bottom:10px;"></i>
+        <h3 style="color:#94a3b8; font-size:13px;">إجمالي التكلفة / هامش الربح</h3>
+        <h2 style="font-size:20px; color:#f8fafc; margin-top:5px;">
+            ت: {{ order.total_cost }} <span style="font-size:12px; color:gray;">ر.س</span> | 
+            <span style="color:#10b981; font-weight:bold;">ر: {{ profit_margin }}</span> <span style="font-size:12px; color:gray;">ر.س</span>
+        </h2>
+    </div>
+
+    <div class="card" style="border-bottom: 4px solid #f59e0b; padding:20px; margin-bottom:0;">
+        <i class="fas fa-truck" style="font-size:22px; color:#f59e0b; margin-bottom:10px;"></i>
+        <h3 style="color:#94a3b8; font-size:13px;">الحالة الحالية</h3>
+        <h2 style="font-size:22px; color:#f8fafc; margin-top:5px;">{{ status_labels.get(order.status, order.status) }}</h2>
+    </div>
+
+    <div class="card" style="border-bottom: 4px solid #8b5cf6; padding:20px; margin-bottom:0;">
+        <i class="fas fa-credit-card" style="font-size:22px; color:#8b5cf6; margin-bottom:10px;"></i>
+        <h3 style="color:#94a3b8; font-size:13px;">طريقة الدفع</h3>
+        <h2 style="font-size:22px; color:#f8fafc; margin-top:5px; text-transform:uppercase;">{{ order.payment_method }}</h2>
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px;">
+    
+    <!-- معلومات العميل والمنتجات -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+        <div class="card" style="margin-bottom:0; display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+                <h3 style="color:#f8fafc; margin-bottom:5px;"><i class="fas fa-user-circle" style="color:#8b5cf6;"></i> {{ order.customer_name }}</h3>
+                <p style="color:#94a3b8; font-size:14px;"><i class="fas fa-phone"></i> <span style="direction:ltr; display:inline-block;">{{ order.customer_phone }}</span> | <i class="fas fa-id-badge"></i> {{ order.uid }}</p>
+            </div>
+            <div style="text-align:left;">
+                <p style="color:#cbd5e1; font-size:13px; max-width:250px;"><i class="fas fa-map-marker-alt" style="color:#ef4444;"></i> {{ order.delivery_neighborhood }} - {{ order.address_details or order.address }}</p>
+                {% if order.location_link %}
+                    <a href="{{ order.location_link }}" target="_blank" style="color:#3b82f6; font-size:12px; font-weight:bold;">📍 فتح في خرائط جوجل</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:0; flex:1;">
+            <h3 style="margin-bottom:15px; color:#f8fafc;"><i class="fas fa-shopping-basket" style="color:#f59e0b;"></i> محتويات سلة الطلب</h3>
+            <div class="table-container">
+                <table>
+                    <tr><th>المنتج</th><th>الكمية</th><th>السعر الإفرادي</th><th>الإجمالي</th></tr>
+                    {% for item in order.parsed_items %}
+                    <tr>
+                        <td style="font-weight:bold;">{{ item.name }}</td>
+                        <td>x{{ item.quantity }}</td>
+                        <td style="color:#94a3b8;">{{ item.price }} ر.س</td>
+                        <td style="color:#10b981; font-weight:bold;">{{ item.price * item.quantity }} ر.س</td>
+                    </tr>
+                    {% endfor %}
+                    <tr>
+                        <td colspan="3" style="text-align:left; font-weight:bold; color:#f8fafc;">رسوم التوصيل:</td>
+                        <td style="color:#f59e0b; font-weight:bold;">+ {{ order.delivery_price }} ر.س</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="text-align:left; font-weight:900; color:#f8fafc; font-size:18px;">المجموع النهائي:</td>
+                        <td style="color:#3b82f6; font-weight:900; font-size:18px;">{{ order.total_amount }} ر.س</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- السجل الزمني وحالة الدفع -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+        
+        <!-- التحكم بالحالة -->
+        <div class="card" style="margin-bottom:0; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.3);">
+            <h3 style="margin-bottom:15px; color:#3b82f6;"><i class="fas fa-random"></i> تحديث حالة الطلب يدويًا</h3>
+            <form method="POST" action="{{ url_for('admin.orders_page') }}">
+                <input type="hidden" name="order_id" value="{{ order.id }}">
+                <select name="status" style="width:100%; margin-bottom:10px; padding:10px; font-weight:bold; background:#1e293b; color:white;">
+                    {% for st_val, st_lbl in status_labels.items() %}
+                        <option value="{{ st_val }}" {% if order.status == st_val %}selected{% endif %}>{{ st_lbl }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-success" style="width:100%;"><i class="fas fa-check"></i> حفظ الحالة الجديدة</button>
+            </form>
+        </div>
+
+        <div class="card" style="margin-bottom:0; flex:1;">
+            <h3 style="margin-bottom:15px; color:#f8fafc;"><i class="fas fa-history" style="color:#10b981;"></i> السجل الزمني (Timeline)</h3>
+            
+            <div style="display:flex; flex-direction:column; gap:15px; position:relative; padding-right:15px; border-right:2px solid #334155;">
+                {% for log in timeline %}
+                <div style="position:relative;">
+                    <div style="position:absolute; right:-21px; top:5px; width:10px; height:10px; border-radius:50%; background:#3b82f6; border:2px solid #1e293b;"></div>
+                    <span style="font-size:11px; color:#94a3b8;">{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    <h4 style="color:#f8fafc; font-size:14px; margin-top:2px;">{{ status_labels.get(log.status, log.status) }}</h4>
+                    <p style="font-size:12px; color:#cbd5e1; margin-top:2px;">{{ log.notes }}</p>
+                </div>
+                {% else %}
+                <p style="color:#64748b; font-size:12px;">لا يوجد سجل زمني لتغيير الحالات.</p>
+                {% endfor %}
+            </div>
+            
+            <hr style="border:0; border-top:1px dashed #334155; margin:20px 0;">
+            
+            <h3 style="margin-bottom:15px; color:#f8fafc;"><i class="fas fa-shield-alt" style="color:#eab308;"></i> سجل بوابات الدفع (Webhooks)</h3>
+            {% if payments %}
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    {% for p in payments %}
+                        <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; border-right:3px solid {% if p.status == 'paid' %}#10b981{% else %}#ef4444{% endif %};">
+                            <strong style="font-size:13px; color:#f8fafc;">{{ p.gateway }} - <span style="color:#10b981;">{{ p.amount }} ر.س</span></strong>
+                            <p style="font-size:11px; color:#94a3b8; font-family:monospace; margin-top:3px;">ID: {{ p.transaction_id }}</p>
+                            <span class="badge" style="font-size:10px; background:rgba(255,255,255,0.1); margin-top:5px;">{{ p.status }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p style="color:#64748b; font-size:12px;">لا يوجد سجل دفع إلكتروني (تم الدفع عند الاستلام غالباً).</p>
+            {% endif %}
+
+        </div>
+        
+    </div>
+
+</div>
+{% endblock %}

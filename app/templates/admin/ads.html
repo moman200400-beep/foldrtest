@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة الإعلانات{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2 class="mb-0">إدارة الإعلانات</h2>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{{ url_for('admin_ads.add_ad') }}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> إضافة إعلان جديد
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if ads %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center">الصورة</th>
+                        <th>العنوان</th>
+                        <th>الموضع</th>
+                        <th class="text-center">الحالة</th>
+                        <th class="text-center">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ad in ads %}
+                        <tr>
+                            <td class="text-center">
+                                <img src="{{ ad.image }}" alt="{{ ad.title }}" style="height: 60px; max-width: 100px; object-fit: cover; border-radius: 4px;">
+                            </td>
+                            <td>
+                                <strong>{{ ad.title }}</strong>
+                                {% if ad.link and ad.link != '#' %}
+                                    <br>
+                                    <small class="text-muted">الرابط: <a href="{{ ad.link }}" target="_blank">{{ ad.link }}</a></small>
+                                {% endif %}
+                            </td>
+                            <td>{{ ad.position }}</td>
+                            <td class="text-center">
+                                <form method="POST" action="{{ url_for('admin_ads.toggle_ad', ad_id=ad.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm {% if ad.is_active %}btn-success{% else %}btn-warning{% endif %}" title="انقر للتبديل">
+                                        {% if ad.is_active %}
+                                            <i class="bi bi-check-circle"></i> مُفعّل
+                                        {% else %}
+                                            <i class="bi bi-x-circle"></i> مُعطّل
+                                        {% endif %}
+                                    </button>
+                                </form>
+                            </td>
+                            <td class="text-center">
+                                <a href="{{ url_for('admin_ads.edit_ad', ad_id=ad.id) }}" class="btn btn-sm btn-primary" title="تعديل">
+                                    <i class="bi bi-pencil"></i> تعديل
+                                </a>
+                                <form method="POST" action="{{ url_for('admin_ads.delete_ad', ad_id=ad.id) }}" style="display: inline;" onclick="return confirm('هل أنت متأكد من حذف هذا الإعلان؟');">
+                                    <button type="submit" class="btn btn-sm btn-danger" title="حذف">
+                                        <i class="bi bi-trash"></i> حذف
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+</div>
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            <p class="mb-0">لا توجد إعلانات حالياً. <a href="{{ url_for('admin_ads.add_ad') }}">أضف واحداً جديداً</a></p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة المستخدمين | Almizaj ERP{% endblock %}
+
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 style="font-size:28px;">إدارة المستخدمين والصلاحيات 👥</h1>
+    <!-- 🌟 التحديث هنا: زر التصدير أصبح ذكياً ويحمل قيم البحث والفلترة معه -->
+    <a href="?export=csv&search={{ search_query }}&role={{ current_filter }}" class="btn btn-success" style="text-decoration:none;">
+        <i class="fas fa-file-csv"></i> تصدير CSV
+    </a>
+</div>
+
+<!-- شريط البحث والفلترة -->
+<form method="GET" class="card" style="display:flex; gap:10px; align-items:center; padding:15px;">
+    <input type="text" name="search" placeholder="ابحث بالاسم، الجوال، أو UID..." value="{{ search_query }}" style="margin:0; flex:1;">
+    <select name="role" style="margin:0; width:200px;">
+        <option value="all" {% if current_filter == 'all' %}selected{% endif %}>جميع المستخدمين</option>
+        <option value="admin" {% if current_filter == 'admin' %}selected{% endif %}>المدراء فقط</option>
+        <option value="customer" {% if current_filter == 'customer' %}selected{% endif %}>العملاء فقط</option>
+        <option value="banned" {% if current_filter == 'banned' %}selected{% endif %} style="color:red;">المحظورين 🚫</option>
+    </select>
+    <button type="submit" class="btn"><i class="fas fa-search"></i> بحث</button>
+    <a href="{{ url_for('admin.users_page') }}" class="btn btn-danger" style="text-decoration:none;">إلغاء الفلتر</a>
+</form>
+
+<div class="card">
+    <p style="color:gray; margin-bottom:15px;">إجمالي النتائج: {{ users|length }}</p>
+    <div class="table-container">
+    <table>
+        <tr><th>المعرف (UID)</th><th>الاسم / الجوال</th><th>الرصيد</th><th>القيمة (LTV)</th><th>الصلاحية</th><th>الحالة</th><th>إجراءات</th></tr>
+        {% for u in users %}
+        <tr>
+            <td style="font-family:monospace; color:gray; font-size:12px;">{{ u.uid }}</td>
+            <td>
+                <b>{{ u.name or 'زائر مجهول' }}</b><br>
+                <span style="font-size:12px; color:gray;">{{ u.phone or 'لا يوجد' }}</span>
+                <form method="POST" style="margin-top:8px; display:flex; gap:5px;">
+                    <input type="hidden" name="action" value="update_notes">
+                    <input type="hidden" name="uid" value="{{ u.uid }}">
+                    <input type="text" name="internal_notes" value="{{ u.internal_notes or '' }}" placeholder="ملاحظة..." style="margin:0; padding:5px; font-size:11px; width:120px; background:rgba(0,0,0,0.2);">
+                    <button class="btn btn-sm" title="حفظ الملاحظة" style="background:#64748b; padding:4px 8px;"><i class="fas fa-save"></i></button>
+                </form>
+            </td>
+            <td>
+                <b style="color:#34d399; font-size:16px;">{{ u.wallet_balance }} ر.س</b>
+                <form method="POST" style="display:flex; gap:5px; margin-top:5px;">
+                    <input type="hidden" name="action" value="update_wallet">
+                    <input type="hidden" name="uid" value="{{ u.uid }}">
+                    <input type="number" name="amount" placeholder="+/-" style="width:70px; margin:0; padding:5px; text-align:center;" required>
+                    <button class="btn btn-sm" title="تحديث الرصيد"><i class="fas fa-save"></i></button>
+                </form>
+            </td>
+            <td style="color:#3b82f6; font-weight:bold;">{{ u.lifetime_value }} ر.س</td>
+            <td>
+                <form method="POST">
+                    <input type="hidden" name="action" value="change_role">
+                    <input type="hidden" name="uid" value="{{ u.uid }}">
+                    <select name="role" onchange="this.form.submit()" style="margin:0; width:100px; padding:5px; font-size:12px;" {% if u.role == 'admin' %}disabled{% endif %}>
+                        <option value="customer" {% if u.role == 'customer' %}selected{% endif %}>عميل</option>
+                        <option value="support" {% if u.role == 'support' %}selected{% endif %}>دعم فني</option>
+                        <option value="finance" {% if u.role == 'finance' %}selected{% endif %}>مالية</option>
+                        <option value="moderator" {% if u.role == 'moderator' %}selected{% endif %}>مشرف</option>
+                        <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>مدير</option>
+                    </select>
+                </form>
+            </td>
+            <td>
+                {% if u.status == 'active' %}<span class="badge" style="background:rgba(16,185,129,0.2); color:#34d399;">نشط ✅</span>
+                {% else %}<span class="badge" style="background:rgba(239,68,68,0.2); color:#f87171;">محظور 🚫</span>{% endif %}
+            </td>
+            <td>
+                <form method="POST" onsubmit="return confirm('تأكيد الإجراء؟');" style="display:inline-block;">
+                    <input type="hidden" name="action" value="toggle_status">
+                    <input type="hidden" name="uid" value="{{ u.uid }}">
+                    {% if u.status == 'active' %}
+                        <button class="btn btn-sm btn-danger" {% if u.role == 'admin' %}disabled{% endif %} title="حظر"><i class="fas fa-ban"></i></button>
+                    {% else %}
+                        <button class="btn btn-sm btn-success" title="تنشيط"><i class="fas fa-check"></i></button>
+                    {% endif %}
+                </form>
+                <a href="{{ url_for('admin.user_details', uid=u.uid) }}" class="btn btn-sm" style="background:#8b5cf6;" title="الملف التفصيلي والنشاط">
+                    <i class="fas fa-user-circle"></i>
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+</div>
+
+{% endblock %}

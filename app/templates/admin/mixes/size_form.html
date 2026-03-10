@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}{% if action == 'add' %}إضافة حجم{% else %}تعديل حجم{% endif %}{% endblock %}
+
+{% block content %}
+<div class="header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
+    <div>
+        <h1 style="color:#f8fafc; font-size:28px; margin-bottom:5px;">{% if action == 'add' %}إضافة حجم{% else %}تعديل حجم{% endif %}</h1>
+    </div>
+    <a href="{{ url_for('admin_mixes.list_sizes') }}" class="btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
+        <i class="fas fa-arrow-right"></i> عودة
+    </a>
+</div>
+
+<div class="card" style="max-width: 600px;">
+    <form method="POST">
+        <div class="form-group">
+            <label class="form-label">الاسم</label>
+            <input type="text" name="name" value="{{ size.name if size else '' }}" required placeholder="مثال: رأس واحد, 250 جرام...">
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">النوع</label>
+            <select name="type" required>
+                <option value="head" {% if size and size.type == 'head' %}selected{% endif %}>بالرأس (مثال: رأس واحد)</option>
+                <option value="weight" {% if size and size.type == 'weight' %}selected{% endif %}>بالوزن (مثال: بالكيلو أو الجرام)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">السعر (ر.س)</label>
+            <input type="number" step="0.01" name="price" value="{{ size.price if size else '0.0' }}" required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">ترتيب العرض</label>
+            <input type="number" name="sort_order" value="{{ size.sort_order if size else '0' }}" required>
+            <small style="color:#64748b; font-size:12px; display:block; margin-top:5px;">الرقم الأصغر يظهر أولاً بالتطبيق.</small>
+        </div>
+
+        <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-top: 20px;">
+            <input type="checkbox" name="is_active" id="is_active" {% if not size or size.is_active %}checked{% endif %} style="width:20px; height:20px;">
+            <label for="is_active" style="color:white; font-size:16px; cursor:pointer;" class="form-label">متاح للاختيار (نشط)</label>
+        </div>
+
+        <div style="margin-top:30px;">
+            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> حفظ الحجم</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}النظام والأمان | Almizaj ERP{% endblock %}
+
+{% block content %}
+<h1 style="font-size:28px; margin-bottom:20px;">التحكم بالنظام (System Control) ⚙️</h1>
+
+<!-- 🆕 أضفنا enctype="multipart/form-data" للسماح برفع الصور -->
+<form method="POST" enctype="multipart/form-data" class="card" style="border-top: 4px solid #3b82f6; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <input type="hidden" name="action" value="save_settings">
+    
+    <div style="grid-column: span 2;">
+        <h3 style="color:#3b82f6; margin-bottom:15px;"><i class="fas fa-server"></i> إعدادات المتجر العامة</h3>
+    </div>
+    
+    <!-- قسم اسم المتجر ووضع الصيانة -->
+    <div>
+        <label style="color:gray; font-size:14px;">اسم المتجر</label>
+        <input type="text" name="store_name" value="{{ settings.store_name }}" style="margin-top:5px; width:100%;">
+        
+        <label style="color:#ef4444; font-weight:bold; cursor:pointer; font-size:16px; display:block; margin-top:20px;">
+            <input type="checkbox" name="maintenance_mode" {% if settings.maintenance_mode %}checked{% endif %} style="width:18px; height:18px; vertical-align:middle;"> 
+            تفعيل وضع الصيانة (إغلاق المتجر) 🚫
+        </label>
+    </div>
+
+    <!-- 📱 أرقام الجوال والواتساب (التي كانت مفقودة) -->
+    <div>
+        <label style="color:gray; font-size:14px;">رقم الجوال (للاتصال)</label>
+        <input type="text" name="phone" value="{{ settings.phone }}" placeholder="05xxxxxxxx" style="margin-top:5px; width:100%;">
+        
+        <label style="color:gray; font-size:14px; display:block; margin-top:10px;">رقم الواتساب</label>
+        <input type="text" name="whatsapp" value="{{ settings.whatsapp }}" placeholder="05xxxxxxxx" style="margin-top:5px; width:100%;">
+    </div>
+
+    <!-- 🖼️ قسم الشعار (اللوجو) المضاف حديثاً -->
+    <div style="grid-column: span 2; background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; border:1px dashed #334155; text-align:center;">
+        <label style="color:gray; font-size:14px; display:block; margin-bottom:10px;">شعار المتجر (Logo) 🖼️</label>
+        
+        <!-- إظهار الشعار الحالي إن وجد -->
+        {% if settings.store_logo %}
+            <img src="{{ settings.store_logo }}" style="height:60px; border-radius:10px; background:white; padding:5px; margin-bottom:10px; object-fit:contain;">
+        {% else %}
+            <div style="height:60px; width:60px; margin:0 auto 10px; background:#1e293b; border-radius:10px; display:flex; align-items:center; justify-content:center; color:gray;"><i class="fas fa-image"></i></div>
+        {% endif %}
+        
+        <!-- زر اختيار الصورة من الجهاز -->
+        <input type="file" name="logo_file" accept="image/*" style="padding:5px; width:100%; font-size:12px;">
+        <small style="color:gray; font-size:11px;">اختر صورة جديدة من جهازك لتغيير الشعار الحالي.</small>
+    </div>
+
+    <div style="grid-column: span 2; margin-top:10px;">
+        <h3 style="color:#10b981; margin-bottom:15px;"><i class="fas fa-truck"></i> إعدادات التوصيل المجاني الشاملة</h3>
+    </div>
+    
+    <div style="grid-column: span 2; display:flex; gap:20px; align-items:center; background:rgba(16, 185, 129, 0.1); padding:15px; border-radius:12px; border:1px solid #10b981;">
+        <label style="color:#10b981; font-weight:bold; cursor:pointer; font-size:16px;">
+            <input type="checkbox" name="free_delivery_active" {% if settings.free_delivery_active %}checked{% endif %} style="width:18px; height:18px; vertical-align:middle;"> 
+            تفعيل ميزة التوصيل المجاني تلقائياً 🚀
+        </label>
+        
+        <div style="flex-grow:1;">
+            <label style="color:gray; font-size:14px;">الحد الأدنى للطلبات المجانية (ر.س)</label>
+            <input type="number" name="free_delivery_threshold" value="{{ settings.free_delivery_threshold }}" min="0" style="margin-top:5px; width:100px; padding:5px; border-radius:5px; border:1px solid #334155; background:#1e293b; color:white;">
+            <small style="color:gray; margin-right:10px;">مثال: إذا وضعت 300 سيصبح التوصيل مجاني للطلبات بـ 300 ر.س أو أكثر.</small>
+        </div>
+    </div>
+
+    <div style="grid-column: span 2; margin-top:10px;">
+        <h3 style="color:#f59e0b; margin-bottom:15px;"><i class="fas fa-dharmachakra"></i> إعدادات عجلة الحظ (Probability Matrix)</h3>
+    </div>
+    
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; grid-column:span 2;">
+        <div>
+            <label style="color:gray; font-size:14px;">نسبة الفوز (%)</label>
+            <input type="number" name="wheel_win_chance" value="{{ settings.wheel_win_chance }}" min="0" max="100" style="margin-top:5px; width:100%;">
+            <p style="color:gray; font-size:11px; margin-top:5px;">إذا وضعت 0، فسيخسر الجميع دائماً.</p>
+        </div>
+        <div>
+            <label style="color:gray; font-size:14px;">عدد المحاولات اليومية لكل مستخدم</label>
+            <input type="number" name="wheel_daily_limit" value="{{ settings.wheel_daily_limit }}" min="1" style="margin-top:5px; width:100%; border-color:#3b82f6;">
+        </div>
+        <div>
+            <label style="color:gray; font-size:14px;">سقف الأرباح/الخسارة اليومي (ر.س)</label>
+            <input type="number" name="wheel_max_profit" value="{{ settings.wheel_max_profit }}" min="0" style="margin-top:5px; width:100%; border-color:#ef4444;" title="إذا خسرت الإدارة هذا المبلغ اليوم، تتوقف العجلة تلقائيا لحماية المتجر.">
+        </div>
+        <div style="display:flex; align-items:center;">
+            <label style="color:#10b981; font-weight:bold; cursor:pointer; font-size:16px;">
+                <input type="checkbox" name="wheel_active" {% if settings.wheel_active %}checked{% endif %} style="width:18px; height:18px; vertical-align:middle;"> 
+                تشغيل عجلة الحظ للعملاء ✅
+            </label>
+        </div>
+    </div>
+
+    <div style="grid-column: span 2; margin-top:15px;">
+        <button class="btn" style="width:100%; font-size:16px;"><i class="fas fa-save"></i> حفظ التعديلات أمنياً</button>
+    </div>
+</form>
+
+<!-- إحصائيات النظام والنسخ الاحتياطي -->
+<div class="card" style="border-top: 4px solid #3b82f6;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin-bottom:0;"><i class="fas fa-heartbeat" style="color:#ef4444;"></i> صحة الخادم (System Health)</h3>
+        <form method="POST" style="margin:0;" onsubmit="return confirm('هل تريد أخذ نسخة احتياطية من قاعدة البيانات الآن؟');">
+            <input type="hidden" name="action" value="backup_db">
+            <button type="submit" class="btn btn-warning"><i class="fas fa-database"></i> أخذ نسخة احتياطية (Backup)</button>
+        </form>
+    </div>
+    
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:15px; margin-top:20px;">
+        <div style="background:rgba(255,255,255,0.05); padding:20px; text-align:center; border-radius:12px; border:1px solid #334155;">
+            <i class="fas fa-microchip" style="font-size:24px; color:#3b82f6; margin-bottom:10px;"></i>
+            <h4 style="color:gray; font-size:14px;">استهلاك المعالج (CPU)</h4>
+            <h2 style="color:#f8fafc; margin-top:5px;">{{ health.cpu }}%</h2>
+        </div>
+        <div style="background:rgba(255,255,255,0.05); padding:20px; text-align:center; border-radius:12px; border:1px solid #334155;">
+            <i class="fas fa-memory" style="font-size:24px; color:#10b981; margin-bottom:10px;"></i>
+            <h4 style="color:gray; font-size:14px;">الذاكرة العشوائية (RAM)</h4>
+            <h2 style="color:#f8fafc; margin-top:5px;">{{ health.ram }}%</h2>
+        </div>
+        <div style="background:rgba(255,255,255,0.05); padding:20px; text-align:center; border-radius:12px; border:1px solid #334155;">
+            <i class="fas fa-hdd" style="font-size:24px; color:#f59e0b; margin-bottom:10px;"></i>
+            <h4 style="color:gray; font-size:14px;">مساحة القرص (Disk)</h4>
+            <h2 style="color:#f8fafc; margin-top:5px;">{{ health.disk }}%</h2>
+        </div>
+    </div>
+</div>
+
+<!-- إحصائيات العجلة -->
+<div class="card" style="border-top: 4px solid #10b981;">
+    <h3 style="margin-bottom:15px;">إحصائيات العجلة (آخر 10 لعبات) 🎲</h3>
+    <p style="color:gray; margin-bottom:15px;">إجمالي اللعب: <b>{{ total_spins }}</b> | مرات الفوز: <b style="color:#10b981;">{{ wins }}</b></p>
+    <div class="table-container">
+    <table>
+        <tr><th>التاريخ</th><th>المعرف (UID)</th><th>النتيجة</th></tr>
+        {% for w in wheel_logs %}
+        <tr>
+            <td style="font-size:12px; color:gray;">{{ w.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td style="font-family:monospace;">{{ w.uid }}</td>
+            <td style="font-weight:bold; color:{% if w.prize == 'خسارة' %}#ef4444{% else %}#10b981{% endif %};">{{ w.prize }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" style="text-align:center; color:gray;">لا توجد بيانات للعجلة بعد.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+</div>
+
+<!-- سجل الأمان -->
+<div class="card" style="border-top: 4px solid #ef4444;">
+    <h3 style="margin-bottom:10px;">سجل أمان النظام (Audit Log) 🛡️</h3>
+    <p style="color:gray; font-size:12px; margin-bottom:15px;">يتم تسجيل جميع حركات الإدارة هنا ولا يمكن حذفها.</p>
+    <div class="table-container">
+    <table>
+        <tr><th>الوقت والتاريخ</th><th>المشرف</th><th>الإجراء الذي تم</th><th>الـ IP</th></tr>
+        {% for log in logs %}
+        <tr>
+            <td dir="ltr" style="font-size:12px; color:gray; text-align:right;">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td><span class="badge" style="background:rgba(255,255,255,0.05); border:1px solid gray;">ADMIN_{{ log.admin_id }}</span></td>
+            <td style="color:#3b82f6; font-weight:bold;">{{ log.action }}</td>
+            <td style="font-family:monospace; font-size:12px;">{{ log.ip_address }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" style="text-align:center; color:gray;">لا يوجد سجل بعد.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+</div>
+{% endblock %}

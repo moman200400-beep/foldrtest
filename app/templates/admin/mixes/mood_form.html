@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}{% if action == 'add' %}إضافة مزاج{% else %}تعديل المزاج{% endif %}{% endblock %}
+
+{% block content %}
+<div class="header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
+    <div>
+        <h1 style="color:#f8fafc; font-size:28px; margin-bottom:5px;">{% if action == 'add' %}إضافة مزاج{% else %}تعديل المزاج{% endif %}</h1>
+    </div>
+    <a href="{{ url_for('admin_mixes.list_moods') }}" class="btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
+        <i class="fas fa-arrow-right"></i> عودة
+    </a>
+</div>
+
+<div class="card" style="max-width: 600px;">
+    <form method="POST">
+        <div class="form-group">
+            <label class="form-label">اسم المزاج</label>
+            <input type="text" name="name" value="{{ mood.name if mood else '' }}" required placeholder="مثال: مزاج فواكه، مزاج السهرة...">
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">أيقونة تعبيرية (Emoji)</label>
+            <input type="text" name="icon" value="{{ mood.icon if mood else '🌟' }}" required>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">الوصف (اختياري)</label>
+            <textarea name="description" rows="3" placeholder="وصف قصير للمزاج يظهر للعميل...">{{ mood.description if mood else '' }}</textarea>
+        </div>
+
+        <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-top: 20px;">
+            <input type="checkbox" name="is_active" id="is_active" {% if not mood or mood.is_active %}checked{% endif %} style="width:20px; height:20px;">
+            <label for="is_active" style="color:white; font-size:16px; cursor:pointer;" class="form-label">متاح للاختيار (نشط)</label>
+        </div>
+
+        <div style="margin-top:30px;">
+            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> حفظ المزاج</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

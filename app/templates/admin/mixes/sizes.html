@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة أحجام وأسعار الخلطات{% endblock %}
+
+{% block content %}
+<div class="header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
+    <div>
+        <h1 style="color:#f8fafc; font-size:28px; margin-bottom:5px;">إدارة أحجام وأسعار الخلطات</h1>
+        <p style="color:#94a3b8; font-size:14px;">حدد خيارات الحجم والسعر التي تظهر للعميل (مثل: رأس واحد، نصف كيلو...)</p>
+    </div>
+    <a href="{{ url_for('admin_mixes.add_size') }}" class="btn btn-success" style="font-size:15px;">
+        <i class="fas fa-plus"></i> إضافة حجم جديد
+    </a>
+</div>
+
+<div class="card">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <style>
+          .flash-success { background: #10b98120; color: #10b981; border: 1px solid #10b98150; }
+          .flash-error { background: #ef444420; color: #ef4444; border: 1px solid #ef444450; }
+        </style>
+        {% for category, message in messages %}
+          <div class="{% if category == 'success' %}flash-success{% else %}flash-error{% endif %}" style="padding: 15px; margin-bottom: 20px; border-radius: 8px; font-weight: bold;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>ترتيب العرض</th>
+                    <th>الاسم</th>
+                    <th>النوع</th>
+                    <th>السعر النهائي</th>
+                    <th>الحالة</th>
+                    <th style="text-align:center;">إجراءات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in sizes %}
+                <tr>
+                    <td>{{ s.sort_order }}</td>
+                    <td style="font-weight: bold;">{{ s.name }}</td>
+                    <td>
+                        {% if s.type == 'head' %}
+                            <span class="badge badge-warning">بالرأس</span>
+                        {% else %}
+                            <span class="badge badge-info">بالوزن</span>
+                        {% endif %}
+                    </td>
+                    <td style="color: #10b981; font-weight: bold; font-size: 16px;">{{ s.price }} ر.س</td>
+                    <td>
+                        {% if s.is_active %}
+                            <span class="badge badge-success">متاح</span>
+                        {% else %}
+                            <span class="badge badge-danger">غير متاح</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        <div style="display:flex; gap:10px; justify-content:center;">
+                            <a href="{{ url_for('admin_mixes.edit_size', id=s.id) }}" class="btn btn-warning" style="padding:6px 12px; font-size:12px;"><i class="fas fa-edit"></i></a>
+                            <form action="{{ url_for('admin_mixes.delete_size', id=s.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('هل أنت متأكد من حذف هذا الحجم؟');">
+                                <button type="submit" class="btn btn-danger" style="padding:6px 12px; font-size:12px;"><i class="fas fa-trash"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" style="text-align:center; padding: 20px;">لا توجد أي أحجام مضافة.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

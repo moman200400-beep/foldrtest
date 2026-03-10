@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% block title %}طلبات اليوم للمندوبين{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h1 style="color: #fbbf24; font-size: 28px;"><i class="fas fa-motorcycle"></i> إدارة الطلبات و المناديب</h1>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-info" onclick="openInventoryModal()"><i class="fas fa-boxes"></i> العهدة الصباحية للمناديب</button>
+        <button class="btn btn-success" onclick="openAddOrderModal()"><i class="fas fa-plus"></i> إضافة طلب جديد</button>
+    </div>
+</div>
+
+<!-- بطاقات المندوبين للعهدة الصباحية السريعة إذا أردنا عرضها -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
+    {% for c_data in couriers_data %}
+    <div class="card" style="padding: 15px; border-left: 4px solid #3b82f6;">
+        <h3 style="color: #e2e8f0; font-size: 16px; margin-bottom: 10px;"><i class="fas fa-motorcycle"></i> {{ c_data.courier.name }}</h3>
+        <div style="display: flex; justify-content: space-between; font-size: 13px;">
+            <div>
+                <span style="color: #94a3b8;">شيشة:</span>
+                <strong style="color: #10b981;">{% if c_data.inventory %}{{ c_data.inventory.shisha_boxes_received - c_data.shisha_used }}{% else %}0{% endif %} <small>متبقي</small></strong>
+            </div>
+            <div>
+                <span style="color: #94a3b8;">رأس:</span>
+                <strong style="color: #8b5cf6;">{% if c_data.inventory %}{{ c_data.inventory.head_boxes_received - c_data.head_used }}{% else %}0{% endif %} <small>متبقي</small></strong>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- شريط الفلترة -->
+<style>
+    .filter-btn { padding: 6px 15px; font-size: 13px; }
+    .filter-btn-inactive { background: rgba(255,255,255,0.1); }
+    
+    .status-row-delivered { border-left: 4px solid #10b981; }
+    .status-row-cancelled { border-left: 4px solid #ef4444; }
+    .status-row-pending { border-left: 4px solid #f59e0b; }
+    
+    .status-select { padding: 4px 8px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; font-size: 12px; background: rgba(15,23,42,0.8); cursor: pointer; font-weight: bold; }
+    .status-select-delivered { color: #10b981; }
+    .status-select-cancelled { color: #ef4444; }
+    .status-select-pending { color: #f59e0b; }
+</style>
+<div class="card" style="padding: 15px 25px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+    <strong style="color: #94a3b8;"><i class="fas fa-filter"></i> فلترة الطلبات: </strong>
+    <a href="?filter=today" class="btn filter-btn {% if filter_type == 'today' %}btn-success{% else %}filter-btn-inactive{% endif %}">اليوم</a>
+    <a href="?filter=yesterday" class="btn filter-btn {% if filter_type == 'yesterday' %}btn-success{% else %}filter-btn-inactive{% endif %}">الأمس</a>
+    <a href="?filter=week" class="btn filter-btn {% if filter_type == 'week' %}btn-success{% else %}filter-btn-inactive{% endif %}">هذا الأسبوع</a>
+    
+    <form action="" method="GET" style="display:flex; gap: 10px; align-items: center; margin-right: auto;">
+        <input type="hidden" name="filter" value="custom">
+        <input type="date" name="date" style="padding: 6px 12px; height: auto;" value="{{ request.args.get('date', '') }}" required>
+        <button type="submit" class="btn btn-info" style="padding: 6px 15px; background: #3b82f6;"><i class="fas fa-search"></i> بحث بالتاريخ</button>
+    </form>
+</div>
+
+<div class="card table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>المندوب</th>
+                <th>الحي</th>
+                <th>البوكسات</th>
+                <th>قيمة التوصيل</th>
+                <th style="color: #10b981;">دفع كاش</th>
+                <th style="color: #3b82f6;">دفع شبكة</th>
+                <th style="color: #f59e0b;">الإجمالي</th>
+                <th>الحالة</th>
+                <th>الوقت</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for o in orders %}
+            <tr class="{% if o.order_status == 'تم التوصيل' %}status-row-delivered{% elif o.order_status == 'ملغي' %}status-row-cancelled{% else %}status-row-pending{% endif %}">
+                <td style="color: #64748b;">{{ o.id }}</td>
+                <td style="font-weight: bold; color: #e2e8f0;">{{ o.courier.name if o.courier else '---' }}</td>
+                <td>{{ o.district }}</td>
+                <td>
+                    <div style="font-size: 14px; text-align: center;">
+                        <div>{{ o.shisha_boxes_used }} <small style="color:#94a3b8;">شيشة</small></div>
+                        <div style="margin-top:2px;">{{ o.head_boxes_used }} <small style="color:#94a3b8;">رأس</small></div>
+                    </div>
+                </td>
+                <td>{{ o.delivery_fee }} ر.س</td>
+                <td style="color: #10b981; font-weight: bold;">{{ o.cash_amount }}</td>
+                <td style="color: #3b82f6; font-weight: bold;">{{ o.card_amount }}</td>
+                <td style="color: #f59e0b; font-weight: 900; font-size: 16px;">{{ o.total }} ر.س</td>
+                <td>
+                    <form action="{{ url_for('admin.edit_courier_order_status', id=o.id) }}" method="POST">
+                        <select name="order_status" onchange="this.form.submit()" class="status-select {% if o.order_status == 'تم التوصيل' %}status-select-delivered{% elif o.order_status == 'ملغي' %}status-select-cancelled{% else %}status-select-pending{% endif %}">
+                            <option value="قيد التوصيل" {% if o.order_status == 'قيد التوصيل' %}selected{% endif %}>قيد التوصيل</option>
+                            <option value="تم التوصيل" {% if o.order_status == 'تم التوصيل' %}selected{% endif %}>تم التوصيل</option>
+                            <option value="ملغي" {% if o.order_status == 'ملغي' %}selected{% endif %}>ملغي</option>
+                        </select>
+                    </form>
+                </td>
+                <td style="font-size: 12px; color: #94a3b8; direction: ltr; text-align: right;">{{ o.created_at.strftime('%Y-%m-%d %I:%M %p') }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="10" style="text-align:center; padding: 30px; color: #94a3b8;">لا توجد طلبات في هذه الفترة المحددة.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- نافذة إضافة طلب -->
+<div id="addOrderModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+    <div class="card" style="width: 500px; padding: 30px; animation: scaleUp 0.3s ease;">
+        <h2 style="color: #10b981; margin-bottom: 20px; font-size: 22px;"><i class="fas fa-plus-circle"></i> إضافة طلب جديد للمندوب</h2>
+        <form id="orderForm" method="POST" action="{{ url_for('admin.add_courier_order') }}">
+            
+            <div class="form-group">
+                <label class="form-label">اختيار المندوب *</label>
+                <select name="courier_id" required>
+                    <option value="">-- اختر المندوب --</option>
+                    {% for c in couriers_data %}
+                        <option value="{{ c.courier.id }}">{{ c.courier.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">الحي *</label>
+                <input type="text" name="district" required placeholder="مثال: الرمال, الملقا, الشفاء...">
+            </div>
+
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">عدد الشيشات المباعة</label>
+                    <input type="number" name="shisha_boxes_used" id="shisha_o_boxes" value="0" min="0" oninput="calcTotal()">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">عدد الرؤوس المباعة</label>
+                    <input type="number" name="head_boxes_used" id="head_o_boxes" value="0" min="0" oninput="calcTotal()">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">سعر بوكس الشيشة</label>
+                    <input type="number" step="0.5" name="shisha_price" id="shisha_price" value="0.0" min="0" oninput="calcTotal()">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">سعر بوكس الرأس</label>
+                    <input type="number" step="0.5" name="head_price" id="head_price" value="0.0" min="0" oninput="calcTotal()">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">قيمة التوصيل (للمندوب)</label>
+                <input type="number" step="0.5" name="delivery_fee" id="o_delivery" value="0.0" min="0" oninput="calcTotal()">
+            </div>
+
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label" style="color:#10b981;">تم دفع كاش</label>
+                    <input type="number" step="0.5" name="cash_amount" id="o_cash" value="0.0" min="0" style="border-bottom: 2px solid #10b981;">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label" style="color:#3b82f6;">تم دفع شبكة</label>
+                    <input type="number" step="0.5" name="card_amount" id="o_card" value="0.0" min="0" style="border-bottom: 2px solid #3b82f6;">
+                </div>
+            </div>
+
+            <div style="margin-top: 15px; padding: 15px; background: rgba(245,158,11,0.1); border-radius: 10px; border: 1px solid rgba(245,158,11,0.3); text-align: center;">
+                <span style="font-size: 14px; color: #cbd5e1;">الإجمالي المستحق (بوكسات + توصيل):</span><br>
+                <strong id="o_total_display" style="font-size: 24px; color: #f59e0b; font-weight: 900;">0.0 ر.س</strong>
+            </div>
+
+            <div style="display: flex; gap: 15px; margin-top: 25px;">
+                <button type="submit" class="btn btn-success" style="flex:1; font-size: 16px;"><i class="fas fa-check-circle"></i> تسجيل الطلب</button>
+                <button type="button" class="btn btn-danger" style="flex:1;" onclick="closeAddOrderModal()"><i class="fas fa-times"></i> إلغاء</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- نافذة إضافة وتحديث العهدة الصباحية -->
+<div id="updateInventoryModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+    <div class="card" style="width: 500px; padding: 30px; animation: scaleUp 0.3s ease;">
+        <h2 style="color: #3b82f6; margin-bottom: 20px; font-size: 22px;"><i class="fas fa-boxes"></i> تسجيل العهدة الصباحية للمندوب</h2>
+        <form method="POST" action="{{ url_for('admin.update_courier_inventory') }}">
+            <div class="form-group">
+                <label class="form-label">اختيار المندوب *</label>
+                <select name="courier_id" required>
+                    <option value="">-- اختر المندوب --</option>
+                    {% for c in couriers_data %}
+                        <option value="{{ c.courier.id }}">{{ c.courier.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">الكمية المستلمة (بوكس شيشة)</label>
+                    <input type="number" name="shisha_received" value="0" min="0" required>
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label class="form-label">الكمية المستلمة (بوكس رأس)</label>
+                    <input type="number" name="head_received" value="0" min="0" required>
+                </div>
+            </div>
+            
+            <div class="alert" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: #cbd5e1; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
+                ملاحظة: إذا قمت بتحديث العهدة لمندوب تم إدخال طلبات له اليوم، سيقوم النظام تلقائياً بخصم الطلبات المدخلة مسبقاً من العهدة الجديدة وحساب المتبقي.
+            </div>
+
+            <div style="display: flex; gap: 15px;">
+                <button type="submit" class="btn btn-info" style="flex:1; background-color: #3b82f6;"><i class="fas fa-save"></i> حفظ العهدة</button>
+                <button type="button" class="btn btn-danger" style="flex:1;" onclick="closeInventoryModal()"><i class="fas fa-times"></i> إلغاء</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    @keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+</style>
+
+<script>
+    const addOrderModal = document.getElementById('addOrderModal');
+    
+    function openAddOrderModal() {
+        document.getElementById('orderForm').reset();
+        document.getElementById('shisha_o_boxes').value = 0;
+        document.getElementById('head_o_boxes').value = 0;
+        document.getElementById('shisha_price').value = 0;
+        document.getElementById('head_price').value = 0;
+        document.getElementById('o_delivery').value = 0;
+        document.getElementById('o_cash').value = 0;
+        document.getElementById('o_card').value = 0;
+        calcTotal();
+        addOrderModal.style.display = 'flex';
+    }
+
+    function closeAddOrderModal() {
+        addOrderModal.style.display = 'none';
+    }
+    
+    function openInventoryModal() {
+        document.getElementById('updateInventoryModal').style.display = 'flex';
+    }
+    
+    function closeInventoryModal() {
+        document.getElementById('updateInventoryModal').style.display = 'none';
+    }
+
+    function calcTotal() {
+        let shishaBoxes = parseFloat(document.getElementById('shisha_o_boxes').value) || 0;
+        let headBoxes = parseFloat(document.getElementById('head_o_boxes').value) || 0;
+        let shishaPrice = parseFloat(document.getElementById('shisha_price').value) || 0;
+        let headPrice = parseFloat(document.getElementById('head_price').value) || 0;
+        
+        let delivery = parseFloat(document.getElementById('o_delivery').value) || 0;
+        let total = (shishaBoxes * shishaPrice) + (headBoxes * headPrice) + delivery;
+        document.getElementById('o_total_display').innerText = total.toFixed(2) + " ر.س";
+    }
+</script>
+{% endblock %}

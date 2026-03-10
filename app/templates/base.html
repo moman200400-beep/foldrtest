@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Almizaj ERP{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
+        
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Tajawal', sans-serif; direction:rtl; color:#f8fafc; }
+        body { background: #0f172a; display:flex; height:100vh; overflow:hidden; }
+        
+        /* التمرير (Scrollbars) */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* القائمة الجانبية Glassmorphism */
+        .sidebar { 
+            width: 280px; 
+            background: rgba(15, 23, 42, 0.65); 
+            backdrop-filter: blur(15px); 
+            -webkit-backdrop-filter: blur(15px);
+            padding: 24px 20px; 
+            border-left: 1px solid rgba(255,255,255,0.05); 
+            display:flex; flex-direction:column; gap:8px; 
+            box-shadow: -4px 0 25px rgba(0,0,0,0.5); 
+            z-index: 10; overflow-y:auto; 
+        }
+        .sidebar h2 { color: #3b82f6; text-align:center; margin-bottom: 25px; font-weight:900; letter-spacing: 1px; font-size: 26px; text-shadow: 0 0 10px rgba(59,130,246,0.5); }
+        
+        /* Dropdown Sidebar Items */
+        .nav-item { margin-bottom: 5px; }
+        .dropdown-toggle { 
+            width: 100%; text-align: right; background: transparent; border: none; 
+            color: #e2e8f0; padding: 12px 16px; font-weight: 700; font-size: 14px; 
+            border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; 
+            transition: all 0.3s ease; 
+        }
+        .dropdown-toggle:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .dropdown-toggle i:first-child { font-size: 16px; width: 24px; text-align: center; color: #94a3b8; }
+        .dropdown-toggle.open i:first-child { color: #3b82f6; }
+        .toggle-icon { margin-right: auto; transition: transform 0.3s ease; font-size: 12px; color: #64748b; }
+        .dropdown-toggle.open .toggle-icon { transform: rotate(180deg); color: #3b82f6; }
+        
+        .nav-dropdown { 
+            max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; 
+            display: flex; flex-direction: column; gap: 4px; 
+            padding-right: 20px; border-right: 2px solid rgba(59,130,246,0.3);
+            margin-right: 25px; margin-top: 5px;
+        }
+        
+        .nav-btn { 
+            padding: 10px 14px; background: transparent; border: none; color: #94a3b8; 
+            text-decoration:none; display:flex; align-items:center; gap: 10px; 
+            font-weight:600; border-radius:8px; transition:all 0.3s ease; font-size: 13px; 
+        }
+        .nav-btn i { font-size: 14px; width: 20px; text-align: center; }
+        .nav-btn:hover { background: rgba(59,130,246,0.1); color: #3b82f6; transform: translateX(-4px); }
+        .nav-btn.active { background: rgba(59,130,246,0.8); color: white; box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+        
+        /* المحتوى الرئيسي */
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; background: #0f172a; position: relative; }
+        /* خلفية مزينة Glassmorphism للمحتوى */
+        .main-content::before {
+            content: ''; position: absolute; top: -100px; left: -100px; width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%); z-index: 0; pointer-events: none;
+        }
+        
+        .card { 
+            background: rgba(30,41,59,0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); 
+            margin-bottom:24px; box-shadow: 0 8px 32px 0 rgba(0,0,0,0.3); transition: transform 0.2s; 
+            position: relative; z-index: 1;
+        }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 12px 40px 0 rgba(0,0,0,0.4); border-color: rgba(59,130,246,0.3); }
+        
+        /* الجداول والأزرار */
+        .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        table { width: 100%; border-collapse: collapse; background: transparent; }
+        th { background: rgba(15,23,42,0.8); padding: 16px; text-align: right; color: #94a3b8; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid rgba(255,255,255,0.05); }
+        td { padding: 16px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.05); color: #e2e8f0; vertical-align: middle; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        tr:last-child td { border-bottom: none; }
+        
+        .btn { background: #3b82f6; color: white; padding: 10px 20px; border:none; border-radius:10px; cursor:pointer; font-weight:bold; transition:all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 4px rgba(59,130,246,0.2); }
+        .btn:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(59,130,246,0.4); }
+        .btn:active { transform: translateY(0); }
+        .btn-danger { background: #ef4444; box-shadow: 0 2px 4px rgba(239,68,68,0.2); }
+        .btn-danger:hover { background: #dc2626; box-shadow: 0 4px 10px rgba(239,68,68,0.4); }
+        .btn-success { background: #10b981; box-shadow: 0 2px 4px rgba(16,185,129,0.2); }
+        .btn-success:hover { background: #059669; box-shadow: 0 4px 10px rgba(16,185,129,0.4); }
+        .btn-warning { background: #f59e0b; box-shadow: 0 2px 4px rgba(245,158,11,0.2); }
+        .btn-warning:hover { background: #d97706; box-shadow: 0 4px 10px rgba(245,158,11,0.4); }
+        
+        /* النماذج (Forms) */
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; margin-bottom: 6px; color: #94a3b8; font-weight: 600; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 12px 14px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; outline:none; transition: all 0.2s; font-size: 14px; }
+        input:focus, select:focus, textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); background: rgba(15,23,42,0.8); }
+        input::placeholder, textarea::placeholder { color: #64748b; }
+        
+        .badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; }
+        .badge-success { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.2); }
+        .badge-warning { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+        .badge-danger { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+        .badge-info { background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.2); }
+    </style>
+</head>
+<body>
+    
+    <!-- القائمة الجانبية -->
+    <div class="sidebar">
+        <h2>Almizaj <span style="color:white;">ERP</span></h2>
+        
+        {# ── Server-side active section detection ── #}
+        {% set p = request.path %}
+        {% set sec_analytics = (p == '/admin/' or p == '/admin/notifications') %}
+        {% set sec_operations = (p == '/admin/orders' or p == '/admin/products' or p == '/admin/users' or p.startswith('/admin/ads') or p == '/admin/carts') %}
+        {% set sec_mix = p.startswith('/admin/mixes') %}
+        {% set sec_delivery = ('/admin/delivery' in p or p == '/admin/courier_orders' or p == '/admin/couriers' or p == '/admin/courier_reports') %}
+        {% set sec_finance = (p == '/admin/payments' or p == '/admin/accounting' or p.startswith('/admin/coupons')) %}
+        {% set sec_system = (p == '/admin/system') %}
+
+        <div class="nav-item">
+            <button class="dropdown-toggle {{ 'open' if sec_analytics else '' }}">
+                <i class="fas fa-chart-pie"></i> التحليلات والمراقبة <i class="fas fa-chevron-down toggle-icon"></i>
+            </button>
+            <div class="nav-dropdown" {% if sec_analytics %}style="max-height:200px"{% endif %}>
+                <a href="{{ url_for('admin.dashboard') }}" class="nav-btn {% if p == '/admin/' %}active{% endif %}">
+                    <i class="fas fa-home"></i> الرئيسية (BI)
+                </a>
+                <a href="{{ url_for('admin.notifications_page') }}" class="nav-btn {% if p == '/admin/notifications' %}active{% endif %}" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span><i class="fas fa-bell"></i> الإشعارات</span>
+                    {% if unread_count and unread_count > 0 %}
+                        <span style="background:#ef4444; color:white; padding:2px 8px; border-radius:10px; font-size:12px; box-shadow:0 0 8px #ef4444;">{{ unread_count }}</span>
+                    {% endif %}
+                </a>
+            </div>
+        </div>
+
+        <div class="nav-item">
+            <button class="dropdown-toggle {{ 'open' if sec_operations else '' }}">
+                <i class="fas fa-tasks"></i> العمليات الأساسية <i class="fas fa-chevron-down toggle-icon"></i>
+            </button>
+            <div class="nav-dropdown" {% if sec_operations %}style="max-height:300px"{% endif %}>
+                <a href="{{ url_for('admin.orders_page') }}" class="nav-btn {% if p == '/admin/orders' %}active{% endif %}">
+                    <i class="fas fa-receipt"></i> إدارة الطلبات
+                </a>
+                <a href="{{ url_for('admin.products_page') }}" class="nav-btn {% if p == '/admin/products' %}active{% endif %}">
+                    <i class="fas fa-box"></i> المنتجات والمخزون
+                </a>
+                <a href="{{ url_for('admin.users_page') }}" class="nav-btn {% if p == '/admin/users' %}active{% endif %}">
+                    <i class="fas fa-users"></i> إدارة المستخدمين
+                </a>
+                <a href="{{ url_for('admin_ads.list_ads') }}" class="nav-btn {% if p.startswith('/admin/ads') %}active{% endif %}">
+                    <i class="fas fa-ad"></i> لوحة الإعلانات
+                </a>
+                <a href="{{ url_for('admin.carts_page') }}" class="nav-btn {% if p == '/admin/carts' %}active{% endif %}">
+                    <i class="fas fa-cart-shopping"></i> مراقبة السلات
+                </a>
+            </div>
+        </div>
+
+        <div class="nav-item">
+            <button class="dropdown-toggle {{ 'open' if sec_mix else '' }}">
+                <i class="fas fa-magic"></i> صانع الخلطات <i class="fas fa-chevron-down toggle-icon"></i>
+            </button>
+            <div class="nav-dropdown" {% if sec_mix %}style="max-height:300px"{% endif %}>
+                <a href="{{ url_for('admin_mixes.list_flavors') }}" class="nav-btn {% if p.startswith('/admin/mixes/flavors') %}active{% endif %}">
+                    <i class="fas fa-leaf"></i> إدارة النكهات
+                </a>
+                <a href="{{ url_for('admin_mixes.list_moods') }}" class="nav-btn {% if p.startswith('/admin/mixes/moods') %}active{% endif %}">
+                    <i class="fas fa-smile-beam"></i> أنواع المزاج
+                </a>
+                <a href="{{ url_for('admin_mixes.list_sizes') }}" class="nav-btn {% if p.startswith('/admin/mixes/sizes') %}active{% endif %}">
+                    <i class="fas fa-weight-hanging"></i> الأحجام والأسعار
+                </a>
+                <a href="{{ url_for('admin_mixes.mix_settings') }}" class="nav-btn {% if p.startswith('/admin/mixes/settings') %}active{% endif %}">
+                    <i class="fas fa-cogs"></i> إعدادات الخلط
+                </a>
+            </div>
+        </div>
+
+        <div class="nav-item">
+            <button class="dropdown-toggle {{ 'open' if sec_delivery else '' }}">
+                <i class="fas fa-truck-fast"></i> التوصيل والمندوبين <i class="fas fa-chevron-down toggle-icon"></i>
+            </button>
+            <div class="nav-dropdown" {% if sec_delivery %}style="max-height:350px"{% endif %}>
+                <a href="{{ url_for('admin.delivery_page') }}" class="nav-btn {% if '/admin/delivery' in p %}active{% endif %}">
+                    <i class="fas fa-gauge-high"></i> لوحة التوصيل
+                </a>
+                <a href="{{ url_for('admin.courier_orders_list') }}" class="nav-btn {% if p == '/admin/courier_orders' %}active{% endif %}">
+                    <i class="fas fa-clipboard-list"></i> طلبات المندوبين
+                </a>
+                <a href="{{ url_for('admin.courier_orders_list') }}#inventory" class="nav-btn" onclick="setTimeout(() => openInventoryModal(), 500)">
+                    <i class="fas fa-boxes-stacked"></i> العهدة الصباحية
+                </a>
+                <a href="{{ url_for('admin.courier_reports') }}" class="nav-btn {% if p == '/admin/courier_reports' %}active{% endif %}">
+                    <i class="fas fa-chart-line"></i> التقارير
+                </a>
+            </div>
+        </div>
+
+        <div class="nav-item">
+            <button class="dropdown-toggle {{ 'open' if sec_finance else '' }}">
+                <i class="fas fa-wallet"></i> المالية والمبيعات <i class="fas fa-chevron-down toggle-icon"></i>
+            </button>
+            <div class="nav-dropdown" {% if sec_finance %}style="max-height:250px"{% endif %}>
+                <a href="{{ url_for('admin.payments_page') }}" class="nav-btn {% if p == '/admin/payments' %}active{% endif %}">
+                    <i class="fas fa-credit-card"></i> سجل المدفوعات
+                </a>
+                <a href="{{ url_for('admin.accounting_page') }}" class="nav-btn {% if p == '/admin/accounting' %}active{% endif %}">
+                    <i class="fas fa-calculator"></i> الدفتر المحاسبي
+                </a>
+                <a href="{{ url_for('coupons.index') }}" class="nav-btn {% if p.startswith('/admin/coupons') %}active{% endif %}">
+                    <i class="fas fa-tags"></i> الكوبونات والعروض
+                </a>
+            </div>
+        </div>
+
+        <div class="nav-item">
+            <button class="dropdown-toggle {{ 'open' if sec_system else '' }}">
+                <i class="fas fa-user-shield"></i> الأمان والنظام <i class="fas fa-chevron-down toggle-icon"></i>
+            </button>
+            <div class="nav-dropdown" {% if sec_system %}style="max-height:200px"{% endif %}>
+                <a href="{{ url_for('admin.system_page') }}" class="nav-btn {% if p == '/admin/system' %}active{% endif %}">
+                    <i class="fas fa-cogs"></i> إعدادات النظام
+                </a>
+            </div>
+        </div>
+        
+        <div style="flex:1;"></div>
+        
+        <a href="{{ url_for('admin.logout') }}" class="nav-btn" style="color:#f87171; justify-content:center; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); padding:12px;">
+            <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+        </a>
+    </div>
+    
+    <!-- محتوى الصفحة المتغير -->
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+        // Toggle dropdown accordion on click (manual user interaction only)
+        document.querySelectorAll('.dropdown-toggle').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.classList.toggle('open');
+                let dropdown = this.nextElementSibling;
+                if (dropdown.style.maxHeight) {
+                    dropdown.style.maxHeight = null;
+                } else {
+                    dropdown.style.maxHeight = dropdown.scrollHeight + "px";
+                }
+            });
+        });
+
+        // Gentle instant scroll to active item (section already open via server-side)
+        (function() {
+            const activeLink = document.querySelector('.nav-btn.active');
+            if (activeLink) {
+                activeLink.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+            }
+        })();
+    </script>
+</body>
+</html>

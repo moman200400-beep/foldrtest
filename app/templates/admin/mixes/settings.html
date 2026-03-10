@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}إعدادات صانع الخلطات{% endblock %}
+
+{% block content %}
+<div class="header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
+    <div>
+        <h1 style="color:#f8fafc; font-size:28px; margin-bottom:5px;">إعدادات صانع الخلطات</h1>
+        <p style="color:#94a3b8; font-size:14px;">التحكم بضوابط خلطات العملاء</p>
+    </div>
+</div>
+
+<div class="card" style="max-width: 600px;">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <style>
+          .flash-success { background: #10b98120; color: #10b981; border: 1px solid #10b98150; }
+          .flash-error { background: #ef444420; color: #ef4444; border: 1px solid #ef444450; }
+        </style>
+        {% for category, message in messages %}
+          <div class="{% if category == 'success' %}flash-success{% else %}flash-error{% endif %}" style="padding: 15px; margin-bottom: 20px; border-radius: 8px; font-weight: bold;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div class="form-group">
+            <label class="form-label">الحد الأقصى لعدد النكهات بالخلطة</label>
+            <input type="number" name="max_flavors" value="{{ setting.max_flavors }}" required min="1" max="10">
+            <small style="color:#64748b; font-size:12px; display:block; margin-top:5px;">كم نكهة يمكن للعميل مزجها معاً (الافتراضي 3).</small>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">الحد الأدنى لنسبة النكهة (%)</label>
+            <input type="number" name="min_percentage" value="{{ setting.min_percentage }}" required min="1" max="100">
+            <small style="color:#64748b; font-size:12px; display:block; margin-top:5px;">أقل نسبة يمكن اختيارها لنكهة واحدة (مثال: 10%).</small>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">الحد الأعلى لنسبة النكهة (%)</label>
+            <input type="number" name="max_percentage" value="{{ setting.max_percentage }}" required min="1" max="100">
+            <small style="color:#64748b; font-size:12px; display:block; margin-top:5px;">أعلى نسبة يمكن اختيارها لنكهة واحدة (مثال: 100%).</small>
+        </div>
+
+        <div style="margin-top:30px; display:flex; gap:15px;">
+            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> حفظ الإعدادات</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

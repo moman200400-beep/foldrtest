@@ -1,0 +1,515 @@
+{% extends "base.html" %}
+{% block title %}لوحة التوصيل{% endblock %}
+{% block content %}
+
+<style>
+/* ═══════════════════════════════════════════════
+   Delivery Dashboard — Enhanced Styles
+═══════════════════════════════════════════════ */
+.page-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 28px; flex-wrap: wrap; gap: 12px;
+}
+.page-title { font-size: 24px; font-weight: 900; }
+.page-title span { color: #8b5cf6; }
+
+/* إحصائيات — 6 بطاقات */
+.stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 28px; }
+.stat-card {
+    background: #1e293b; border-radius: 14px; padding: 16px;
+    border: 1px solid #334155; text-align: center; transition: .2s;
+}
+.stat-card:hover { border-color: #8b5cf6; transform: translateY(-2px); }
+.stat-icon { font-size: 22px; margin-bottom: 6px; }
+.stat-val  { font-size: 24px; font-weight: 900; }
+.stat-lbl  { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+
+/* Tabs */
+.tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+.tab-btn {
+    padding: 10px 22px; border-radius: 10px; border: 1px solid #334155;
+    background: transparent; color: #94a3b8; cursor: pointer;
+    font-size: 14px; font-weight: bold; transition: .2s; font-family: 'Tajawal', sans-serif;
+}
+.tab-btn.active, .tab-btn:hover { background: #8b5cf6; color: white; border-color: #8b5cf6; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* جدول */
+.data-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.data-table th {
+    padding: 12px 16px; text-align: right; font-size: 12px; color: #64748b;
+    text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #334155;
+}
+.data-table td { padding: 12px 16px; border-bottom: 1px solid #1e293b; vertical-align: middle; font-size: 13px; }
+.data-table tr:hover td { background: rgba(139,92,246,.04); }
+
+/* Status badge */
+.status-badge {
+    display: inline-block; padding: 4px 12px; border-radius: 8px;
+    font-size: 11px; font-weight: bold; font-family: 'Tajawal', sans-serif;
+}
+
+/* Quick status select */
+.status-select {
+    padding: 5px 8px; background: #0f172a; border: 1px solid #334155;
+    border-radius: 8px; color: white; font-size: 12px; font-family: 'Tajawal', sans-serif;
+    cursor: pointer; outline: none;
+}
+.status-select:focus { border-color: #8b5cf6; }
+
+/* Modal */
+.modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    z-index: 1000; align-items: center; justify-content: center; overflow: auto;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+    background: #1e293b; border-radius: 20px; padding: 32px;
+    max-width: 500px; width: 95%; border: 1px solid #334155;
+    max-height: 90vh; overflow-y: auto; margin: auto;
+}
+.modal-title { font-size: 20px; font-weight: 900; margin-bottom: 24px; color: #e2e8f0; }
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom:15px; }
+.form-group label { font-size: 12px; color: #94a3b8; font-weight: bold; }
+.form-group input,
+.form-group select {
+    padding: 10px 14px; background: #0f172a; border: 1px solid #334155;
+    border-radius: 10px; color: white; font-family: 'Tajawal', sans-serif;
+    font-size: 14px; outline: none; transition: .2s;
+}
+.form-group input:focus,
+.form-group select:focus { border-color: #8b5cf6; box-shadow: 0 0 0 3px rgba(139,92,246,.1); }
+.modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+
+/* toggle switch */
+.toggle-wrap { display: flex; align-items: center; gap: 8px; }
+.toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
+.toggle input { display: none; }
+.toggle-slider {
+    position: absolute; inset: 0; background: #334155; border-radius: 24px;
+    cursor: pointer; transition: .3s;
+}
+.toggle input:checked + .toggle-slider { background: #8b5cf6; }
+.toggle-slider::before {
+    content: ''; position: absolute; width: 18px; height: 18px;
+    background: white; border-radius: 50%; top: 3px; right: 3px; transition: .3s;
+}
+.toggle input:checked + .toggle-slider::before { right: auto; left: 3px; }
+
+/* Order row mini styles */
+.order-customer { font-weight: 700; color: #e2e8f0; }
+.order-phone { font-size: 11px; color: #94a3b8; }
+.order-amount { font-weight: 900; color: #34d399; }
+.order-hood { font-size: 12px; color: #a78bfa; }
+.order-time { font-size: 11px; color: #64748b; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 60px 20px; color: #64748b; }
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+@media (max-width: 1100px) {
+    .stats-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 600px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+
+<!-- ═════════ Header ═════════ -->
+<div class="page-header">
+    <div class="page-title">🚚 لوحة <span>التوصيل</span></div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a href="{{ url_for('admin.export_delivery') }}" class="btn btn-success">
+            <i class="fas fa-file-csv"></i> تصدير تقرير
+        </a>
+    </div>
+</div>
+
+<!-- ═════════ إحصائيات مُحسّنة ═════════ -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">📋</div>
+        <div class="stat-val" style="color:#8b5cf6;">{{ today_orders_count }}</div>
+        <div class="stat-lbl">طلبات اليوم</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-val" style="color:#34d399;">{{ "%.0f"|format(today_sales) }}</div>
+        <div class="stat-lbl">مبيعات اليوم (ر.س)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🚚</div>
+        <div class="stat-val" style="color:#60a5fa;">{{ "%.0f"|format(today_delivery_revenue) }}</div>
+        <div class="stat-lbl">إيراد التوصيل اليوم</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">📍</div>
+        <div class="stat-val" style="color:#ec4899;">{{ active_neighborhoods }}</div>
+        <div class="stat-lbl">أحياء مفعلة</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">🛵</div>
+        <div class="stat-val" style="color:#f97316;">{{ active_drivers }}</div>
+        <div class="stat-lbl">مناديب نشطون</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div class="stat-val" style="color:#94a3b8;">{{ total_deliveries }}</div>
+        <div class="stat-lbl">إجمالي التوصيلات</div>
+    </div>
+</div>
+
+<!-- ═════════ ملخص حالات اليوم ═════════ -->
+{% if today_orders_count > 0 %}
+<div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+    <div style="background:rgba(251,191,36,.1); border:1px solid rgba(251,191,36,.3); border-radius:10px; padding:8px 16px; font-size:13px;">
+        ⏳ قيد المعالجة: <b style="color:#fbbf24;">{{ today_pending }}</b>
+    </div>
+    <div style="background:rgba(249,115,22,.1); border:1px solid rgba(249,115,22,.3); border-radius:10px; padding:8px 16px; font-size:13px;">
+        🛵 في الطريق: <b style="color:#f97316;">{{ today_shipping }}</b>
+    </div>
+    <div style="background:rgba(52,211,153,.1); border:1px solid rgba(52,211,153,.3); border-radius:10px; padding:8px 16px; font-size:13px;">
+        ✅ مكتملة: <b style="color:#34d399;">{{ today_completed }}</b>
+    </div>
+    <div style="background:rgba(167,139,250,.1); border:1px solid rgba(167,139,250,.3); border-radius:10px; padding:8px 16px; font-size:13px;">
+        📍 أكثر حي: <b style="color:#a78bfa;">{{ top_hood }}</b>
+    </div>
+</div>
+{% endif %}
+
+<!-- ═════════ Tabs ═════════ -->
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('today',this)">📋 طلبات اليوم <span style="background:#8b5cf6;color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin-right:4px;">{{ today_orders_count }}</span></button>
+    <button class="tab-btn" onclick="switchTab('neighborhoods',this)">📍 الأحياء</button>
+    <button class="tab-btn" onclick="switchTab('drivers',this)">🛵 المناديب</button>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB: طلبات اليوم
+══════════════════════════════════════ -->
+<div id="tab-today" class="tab-pane active">
+    {% if today_orders|length > 0 %}
+    <div class="card" style="padding:0; overflow:hidden;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>العميل</th>
+                    <th>الحي</th>
+                    <th>المبلغ</th>
+                    <th>التوصيل</th>
+                    <th>الحالة</th>
+                    <th>الوقت</th>
+                    <th>إجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for o in today_orders %}
+            {% set sc = status_colors.get(o.status, ('#94a3b8', 'rgba(148,163,184,.15)')) %}
+            <tr>
+                <td><b>#{{ o.id }}</b></td>
+                <td>
+                    <div class="order-customer">{{ o.customer_name or 'زائر' }}</div>
+                    <div class="order-phone">{{ o.customer_phone or '-' }}</div>
+                </td>
+                <td><span class="order-hood">{{ o.delivery_neighborhood or '-' }}</span></td>
+                <td><span class="order-amount">{{ "%.0f"|format(o.total_amount) }} ر.س</span></td>
+                <td>{{ "%.0f"|format(o.delivery_price or 0) }} ر.س</td>
+                <td>
+                    <span class="status-badge" style="background:{{ sc[1] }};color:{{ sc[0] }};">
+                        {{ status_labels.get(o.status, o.status) }}
+                    </span>
+                </td>
+                <td><span class="order-time">{{ o.created_at.strftime('%H:%M') }}</span></td>
+                <td>
+                    <form method="post" action="{{ url_for('admin.delivery_order_status') }}" style="display:flex;gap:4px;align-items:center;">
+                        <input type="hidden" name="order_id" value="{{ o.id }}">
+                        <select name="status" class="status-select" onchange="this.form.submit()">
+                            {% for key, label in status_labels.items() %}
+                            <option value="{{ key }}" {{ 'selected' if o.status == key else '' }}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div style="font-size:16px; font-weight:bold; color:#94a3b8;">لا توجد طلبات اليوم بعد</div>
+        <div style="font-size:13px; margin-top:6px;">ستظهر الطلبات الجديدة هنا تلقائياً</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB: الأحياء
+══════════════════════════════════════ -->
+<div id="tab-neighborhoods" class="tab-pane">
+    <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
+        <button class="btn" onclick="openModal('modalNeighborhood')">
+            <i class="fas fa-plus"></i> إضافة حي
+        </button>
+    </div>
+    <div class="card" style="padding:0; overflow:hidden;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>الحي</th>
+                    <th>سعر التوصيل</th>
+                    <th>الحالة</th>
+                    <th>إجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for n in neighborhoods %}
+            <tr>
+                <td><b>{{ n.name }}</b></td>
+                <td><b style="color:#10b981;">{{ n.delivery_price }} ر.س</b></td>
+                <td>
+                    {% if n.is_active %}
+                        <span class="status-badge" style="background:rgba(16,185,129,.15);color:#34d399;">مفعل</span>
+                    {% else %}
+                        <span class="status-badge" style="background:rgba(239,68,68,.15);color:#f87171;">موقف</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn" style="padding:6px 12px; font-size:12px;"
+                            onclick='openEditNeighborhood({{ n.id }}, "{{ n.name }}", {{ n.delivery_price }}, {{ n.is_active|lower }})'>
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <form method="post" action="{{ url_for('admin.delete_neighborhood', nid=n.id) }}"
+                            onsubmit="return confirm('هل أنت متأكد من حذف هذا الحي؟')">
+                            <button type="submit" class="btn btn-danger" style="padding:6px 12px; font-size:12px;">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" style="text-align:center;padding:40px;color:#64748b;">لا توجد أحياء مسجلة</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB: المناديب
+══════════════════════════════════════ -->
+<div id="tab-drivers" class="tab-pane">
+    <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
+        <button class="btn" onclick="openModal('modalDriver')">
+            <i class="fas fa-plus"></i> إضافة مندوب
+        </button>
+    </div>
+    <div class="card" style="padding:0; overflow:hidden;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>الاسم</th>
+                    <th>الجوال</th>
+                    <th>الدوام</th>
+                    <th>أقصى طلبات</th>
+                    <th>العمولة</th>
+                    <th>الحالة</th>
+                    <th>إجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for drv in drivers %}
+            <tr>
+                <td><b>{{ drv.name }}</b></td>
+                <td>{{ drv.phone }}</td>
+                <td style="font-size:12px; color:#94a3b8;">{{ drv.shift_start }} — {{ drv.shift_end }}</td>
+                <td>{{ drv.max_daily_orders }}</td>
+                <td><span style="color:#fbbf24;">{{ drv.commission_rate }}%</span></td>
+                <td>
+                    {% if drv.is_active %}
+                        <span class="status-badge" style="background:rgba(16,185,129,.15);color:#34d399;">نشط</span>
+                    {% else %}
+                        <span class="status-badge" style="background:rgba(239,68,68,.15);color:#f87171;">غير نشط</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn" style="padding:6px 12px; font-size:12px;"
+                            onclick='openEditDriver({{ drv.id }}, "{{ drv.name }}", "{{ drv.phone }}", {{ drv.max_daily_orders }}, {{ drv.commission_rate }}, "{{ drv.shift_start }}", "{{ drv.shift_end }}", {{ drv.is_active|lower }})'>
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <form method="post" action="{{ url_for('admin.delete_driver', did=drv.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-danger" style="padding:6px 12px; font-size:12px;" title="حذف المندوب">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" style="text-align:center;padding:40px;color:#64748b;">لا يوجد مناديب مسجلين</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     Modals
+══════════════════════════════════════════════════════ -->
+
+<!-- Modal: إضافة / تعديل حي -->
+<div class="modal-overlay" id="modalNeighborhood">
+    <div class="modal-box">
+        <div class="modal-title" id="neighMTitle">➕ إضافة حي جديد</div>
+        <form method="post" id="neighborhoodForm" action="{{ url_for('admin.add_neighborhood') }}">
+            <div class="form-group">
+                <label>اسم الحي *</label>
+                <input name="name" id="nName" required placeholder="مثال: النرجس">
+            </div>
+            <div class="form-group">
+                <label>سعر التوصيل (ر.س)</label>
+                <input type="number" name="delivery_price" id="nPrice" value="20" min="0" step="0.5">
+            </div>
+            <div class="form-group">
+                <div class="toggle-wrap">
+                    <label class="toggle">
+                        <input type="checkbox" name="is_active" id="nActive" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span style="font-size:13px; color:#e2e8f0;">الحي مفعل</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" style="background:#334155;" onclick="closeModal('modalNeighborhood')">إلغاء</button>
+                <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> حفظ</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: إضافة / تعديل مندوب -->
+<div class="modal-overlay" id="modalDriver">
+    <div class="modal-box">
+        <div class="modal-title" id="drvMTitle">➕ إضافة مندوب جديد</div>
+        <form method="post" id="driverForm" action="{{ url_for('admin.add_driver') }}">
+            <div class="form-group">
+                <label>الاسم الكامل *</label>
+                <input name="name" id="rvName" required>
+            </div>
+            <div class="form-group">
+                <label>رقم الجوال *</label>
+                <input name="phone" id="rvPhone" required placeholder="05xxxxxxxx">
+            </div>
+            <div class="form-group">
+                <label>أقصى طلبات يومياً</label>
+                <input type="number" name="max_daily_orders" id="rvMax" value="20" min="1">
+            </div>
+            <div class="form-group">
+                <label>نسبة العمولة (%)</label>
+                <input type="number" name="commission_rate" id="rvComm" value="10" min="0" max="100" step="0.5">
+            </div>
+            <div class="form-group">
+                <label>بداية الدوام</label>
+                <input type="time" name="shift_start" id="rvSStart" value="08:00">
+            </div>
+            <div class="form-group">
+                <label>نهاية الدوام</label>
+                <input type="time" name="shift_end" id="rvSEnd" value="22:00">
+            </div>
+            <div class="form-group">
+                <div class="toggle-wrap">
+                    <label class="toggle">
+                        <input type="checkbox" name="is_active" id="rvActive" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span style="font-size:13px; color:#e2e8f0;">المندوب نشط</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" style="background:#334155;" onclick="closeModal('modalDriver')">إلغاء</button>
+                <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> حفظ</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Tabs System
+function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + tabId).classList.add('active');
+    btn.classList.add('active');
+    window.location.hash = '#' + tabId;
+}
+
+// Auto-switch based on URL hash
+window.addEventListener('load', () => {
+    let hash = window.location.hash.replace('#', '');
+    if(['today','neighborhoods','drivers'].includes(hash)) {
+        let btn = document.querySelector(`.tab-btn[onclick*="${hash}"]`);
+        if(btn) switchTab(hash, btn);
+    }
+});
+
+// Modal System
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal-overlay')) {
+        event.target.classList.remove('open');
+    }
+}
+
+// Edit Neighborhood
+function openEditNeighborhood(id, name, price, isActive) {
+    document.getElementById('neighMTitle').innerText = '✏️ تعديل الحي';
+    document.getElementById('neighborhoodForm').action = '/admin/delivery/neighborhood/edit/' + id;
+    document.getElementById('nName').value = name;
+    document.getElementById('nPrice').value = price;
+    document.getElementById('nActive').checked = isActive;
+    openModal('modalNeighborhood');
+}
+
+// Reset Neighborhood Form
+document.getElementById('modalNeighborhood').addEventListener('transitionend', function(e) {
+    if(!this.classList.contains('open')) {
+        document.getElementById('neighMTitle').innerText = '➕ إضافة حي جديد';
+        document.getElementById('neighborhoodForm').action = "{{ url_for('admin.add_neighborhood') }}";
+        document.getElementById('neighborhoodForm').reset();
+    }
+});
+
+// Edit Driver
+function openEditDriver(id, name, phone, max, comm, start, end, isActive) {
+    document.getElementById('drvMTitle').innerText = '✏️ تعديل بيانات المندوب';
+    document.getElementById('driverForm').action = '/admin/delivery/driver/edit/' + id;
+    document.getElementById('rvName').value = name;
+    document.getElementById('rvPhone').value = phone;
+    document.getElementById('rvMax').value = max;
+    document.getElementById('rvComm').value = comm;
+    document.getElementById('rvSStart').value = start;
+    document.getElementById('rvSEnd').value = end;
+    document.getElementById('rvActive').checked = isActive;
+    openModal('modalDriver');
+}
+
+// Reset Driver Form
+document.getElementById('modalDriver').addEventListener('transitionend', function(e) {
+    if(!this.classList.contains('open')) {
+        document.getElementById('drvMTitle').innerText = '➕ إضافة مندوب جديد';
+        document.getElementById('driverForm').action = "{{ url_for('admin.add_driver') }}";
+        document.getElementById('driverForm').reset();
+    }
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}سجل المدفوعات | Almizaj ERP{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+    <h1 style="font-size:28px;">بوابات الدفع والـ Webhooks 💳</h1>
+    <span class="badge" style="background:rgba(245,158,11,0.2); color:#f59e0b; font-size:14px;"><i class="fas fa-lock"></i> Sandbox Mode</span>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-bottom:30px;">
+    <div class="card" style="border-bottom: 4px solid #10b981; text-align:center;">
+        <h3 style="color:gray; font-size:14px; margin-bottom:10px;">إجمالي الدفع الناجح</h3>
+        <h2 style="color:#10b981;">{{ total_success }} ر.س</h2>
+    </div>
+    <div class="card" style="border-bottom: 4px solid #ef4444; text-align:center;">
+        <h3 style="color:gray; font-size:14px; margin-bottom:10px;">عمليات فاشلة (أخطاء بوابة)</h3>
+        <h2 style="color:#ef4444;">{{ failed_count }}</h2>
+    </div>
+    <div class="card" style="border-bottom: 4px solid #f59e0b; text-align:center;">
+        <h3 style="color:gray; font-size:14px; margin-bottom:10px;">عمليات مكررة محظورة (Duplicate)</h3>
+        <h2 style="color:#f59e0b;">{{ duplicate_count }}</h2>
+    </div>
+</div>
+
+<div class="card">
+    <h3 style="margin-bottom:15px; color:#f8fafc;"><i class="fas fa-list-alt"></i> سجل حركات بوابات الدفع (Webhooks)</h3>
+    <p style="color:gray; margin-bottom:15px; font-size:12px;">تتم مراقبة هذا السجل لضمان عدم وجود تلاعب أو إعادة إرسال لعمليات دفع وهمية.</p>
+    
+    <div class="table-container">
+    <table>
+        <tr>
+            <th>رقم العملية (Transaction)</th>
+            <th>الوقت</th>
+            <th>العميل / الطلب</th>
+            <th>البوابة</th>
+            <th>المبلغ</th>
+            <th>الحالة / الخطأ</th>
+        </tr>
+        {% for p in payments %}
+        <tr>
+            <td style="font-family:monospace; color:#3b82f6; font-size:12px;">{{ p.transaction_id }}</td>
+            <td style="font-size:12px; color:gray;">{{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td><b>{{ p.uid }}</b><br><span style="color:gray; font-size:12px;">طلب #{{ p.order_id or 'غير محدد' }}</span></td>
+            <td><span class="badge" style="background:#1e293b; border:1px solid gray;">{{ p.gateway }}</span></td>
+            <td><b style="color:white;">{{ p.amount }} ر.س</b></td>
+            <td>
+                {% if p.status == 'success' %}
+                    <span class="badge" style="background:rgba(16,185,129,0.2); color:#10b981;">ناجحة ✅</span>
+                {% elif p.status == 'duplicate' %}
+                    <span class="badge" style="background:rgba(245,158,11,0.2); color:#f59e0b;" title="{{ p.error_msg }}">مكررة محظورة ⚠️</span>
+                {% else %}
+                    <span class="badge" style="background:rgba(239,68,68,0.2); color:#ef4444;" title="{{ p.error_msg }}">فشلت ❌</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center; padding:30px; color:gray;">لا توجد عمليات دفع مسجلة بعد.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}المنتجات | Almizaj ERP{% endblock %}
+
+{% block content %}
+<h1 style="font-size:28px; margin-bottom:20px;">إدارة المنتجات والأقسام 📦</h1>
+
+<div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px;">
+    <!-- 1️⃣ إضافة منتج -->
+    <div class="card" style="border-top: 4px solid #3b82f6;">
+        <h3 style="margin-bottom:15px; color:#3b82f6;"><i class="fas fa-box-open"></i> إنشاء منتج جديد</h3>
+        <form method="POST" enctype="multipart/form-data" style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+            <input type="hidden" name="action" value="add_product">
+            <div><label style="font-size:12px;color:gray;">الاسم</label><input type="text" name="name" required></div>
+            <div><label style="font-size:12px;color:gray;">النوع</label>
+                <select name="type">
+                    <option value="physical">ملموس (شحن)</option>
+                    <option value="digital">رقمي (محتوى)</option>
+                    <option value="subscription">اشتراك (شهر/سنة)</option>
+                    <option value="balance">شحن رصيد</option>
+                    <option value="code">كود تفعيل</option>
+                </select>
+            </div>
+            <div><label style="font-size:12px;color:gray;">القسم</label>
+                <select name="category" required>{% for cat in categories %}<option value="{{ cat }}">{{ cat }}</option>{% endfor %}</select>
+            </div>
+            <div><label style="font-size:12px;color:gray;">الترتيب</label><input type="number" name="sort_order" value="0"></div>
+            <div><label style="font-size:12px;color:gray;">السعر الأساسي (للبيع)</label><input type="number" step="0.01" name="price" required></div>
+            <div><label style="font-size:12px;color:gray;">التكلفة (للمارجن)</label><input type="number" step="0.01" name="cost_price" value="0.0"></div>
+            <div><label style="font-size:12px;color:gray;">سعر العرض (اختياري)</label><input type="number" step="0.01" name="discount_price"></div>
+            <div><label style="font-size:12px;color:gray;">المخزون</label><input type="number" name="stock" value="10" required></div>
+            <div><label style="font-size:12px;color:gray;">صورة 📸</label><input type="file" name="image_file" accept="image/*" style="padding:5px;"></div>
+            <!-- حقل الوصف الجديد -->
+            <div style="grid-column: span 2;">
+                <label style="font-size:12px;color:gray;">وصف المنتج التفصيلي</label>
+                <textarea name="description" rows="3" style="width:100%; padding:10px; background:#0f172a; border:1px solid #334155; color:white; border-radius:8px;"></textarea>
+            </div>
+            <div style="grid-column: span 2;"><button type="submit" class="btn" style="width:100%;"><i class="fas fa-plus"></i> إضافة المنتج</button></div>
+        </form>
+    </div>
+
+    <!-- 2️⃣ الأقسام + البنرات -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+        <div class="card" style="border-top: 4px solid #10b981; margin-bottom:0;">
+            <h3 style="margin-bottom:15px; color:#10b981;"><i class="fas fa-tags"></i> الأقسام</h3>
+            <form method="POST" style="display:flex; gap:10px; margin-bottom: 15px;">
+                <input type="hidden" name="action" value="add_category">
+                <input type="text" name="new_category" placeholder="اسم القسم..." required style="margin:0;">
+                <button class="btn btn-success"><i class="fas fa-plus"></i></button>
+            </form>
+            <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                {% for cat in categories %}
+                <div style="background:rgba(255,255,255,0.05); padding:5px 12px; border-radius:20px; display:flex; align-items:center; gap:8px; border:1px solid #334155;">
+                    <span style="font-size:13px; font-weight:bold;">{{ cat }}</span>
+                    <form method="POST" onsubmit="return confirm('حذف؟');" style="margin:0;"><input type="hidden" name="action" value="delete_category"><input type="hidden" name="category_name" value="{{ cat }}"><button style="background:transparent; border:none; color:#ef4444; cursor:pointer;"><i class="fas fa-times"></i></button></form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card" style="border-top: 4px solid #f59e0b; margin-bottom:0; flex:1;">
+            <h3 style="margin-bottom:15px; color:#f59e0b;"><i class="fas fa-images"></i> البنرات</h3>
+            <form method="POST" enctype="multipart/form-data" style="margin-bottom: 20px;">
+                <input type="hidden" name="action" value="add_banner">
+                <input type="file" name="banner_file" accept="image/*" style="padding:5px;" required>
+                <input type="number" name="sort_order" placeholder="الترتيب" value="0">
+                <button type="submit" class="btn" style="background:#f59e0b; width:100%;"><i class="fas fa-upload"></i> رفع البانر</button>
+            </form>
+            <div style="max-height:150px; overflow-y:auto;">
+                {% for b in banners %}
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.2); padding:10px; border-radius:10px; margin-bottom:10px;">
+                    <img src="{{ b.image_url }}" style="height:40px; border-radius:5px; object-fit:cover;">
+                    <form method="POST"><input type="hidden" name="action" value="delete_banner"><input type="hidden" name="bid" value="{{ b.id }}"><button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button></form>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3️⃣ جدول المنتجات المتقدم مع التعديل -->
+<div class="card">
+    <h3 style="margin-bottom:15px;">المستودع ({{ products|length }} منتج)</h3>
+    <div class="table-container">
+    <table>
+        <tr><th>المنتج</th><th>القسم</th><th>السعر</th><th>المخزون</th><th>الحالة</th><th>إجراء</th></tr>
+        {% for p in products %}
+        <tr>
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="edit_product">
+                <input type="hidden" name="pid" value="{{ p.id }}">
+                
+                <td style="display:flex; gap:10px; align-items:center;">
+                    <img src="{{ p.image_url }}" style="width:40px; height:40px; border-radius:8px; background:white; padding:2px; object-fit:contain;">
+                    <input type="text" name="name" value="{{ p.name }}" style="margin:0; padding:5px; width:150px; font-size:13px;" required>
+                </td>
+                
+                <td>
+                    <select name="category" style="margin:0; padding:5px; font-size:12px;">
+                        {% for cat in categories %}<option value="{{ cat }}" {% if p.category == cat %}selected{% endif %}>{{ cat }}</option>{% endfor %}
+                    </select>
+                </td>
+                
+                <td style="display:flex; flex-direction:column; gap:5px;">
+                    <input type="number" step="0.01" name="price" value="{{ p.price }}" style="margin:0; padding:5px; width:80px; font-size:12px;" required title="سعر البيع">
+                    <input type="number" step="0.01" name="cost_price" value="{{ p.cost_price }}" style="margin:0; padding:5px; width:80px; font-size:12px; border-color:#f59e0b;" placeholder="التكلفة (للمارجن)" title="التكلفة">
+                    <input type="number" step="0.01" name="discount_price" value="{{ p.discount_price or '' }}" style="margin:0; padding:5px; width:80px; font-size:12px; border-color:#10b981;" placeholder="سعر الخصم">
+                </td>
+                
+                <td>
+                    <input type="number" name="stock" value="{{ p.stock }}" style="margin:0; padding:5px; width:60px; font-size:12px; {% if p.stock < 5 %}border-color:#ef4444; box-shadow:0 0 5px #ef4444;{% endif %}" required>
+                    {% if p.stock < 5 %}
+                        <div style="font-size:10px; color:#ef4444; margin-top:4px;"><i class="fas fa-exclamation-triangle"></i> منخفض!</div>
+                    {% endif %}
+                </td>
+                
+                <td>
+                    {% if p.is_active %}<span class="badge" style="background:rgba(16,185,129,0.2); color:#10b981;">نشط</span>{% else %}<span class="badge" style="background:#ef4444; color:white;">معطل</span>{% endif %}
+                </td>
+                
+                <td style="display:flex; gap:5px;">
+                    <button type="submit" class="btn btn-sm btn-success" title="حفظ التعديلات"><i class="fas fa-save"></i></button>
+            </form>
+                    
+                    <form method="POST"><input type="hidden" name="action" value="toggle_product"><input type="hidden" name="pid" value="{{ p.id }}"><button class="btn btn-sm" style="background:#f59e0b;"><i class="fas fa-eye"></i></button></form>
+                    <form method="POST" onsubmit="return confirm('حذف نهائي؟');"><input type="hidden" name="action" value="delete_product"><input type="hidden" name="pid" value="{{ p.id }}"><button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button></form>
+                </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+</div>
+{% endblock %}
